@@ -490,16 +490,23 @@ public class FormEstadistica extends javax.swing.JFrame {
     String TipoDeUsuario = CLogin.getTipoUsuarioAdentro(); // Usa metodo
 
     // Crear el formulario de menú adecuado en función del tipo de usuario
-    if ("administrador".equals(TipoDeUsuario)) {
+    boolean cerrado = false;
+    if ("ADMIN".equals(TipoDeUsuario)) {
         FormMenuPrincipal menuPrincipal = new FormMenuPrincipal();
         menuPrincipal.setVisible(true);
-    } else if ("maestro".equals(TipoDeUsuario)) {
+        cerrado = true;
+    } else if ("DOCENTE".equals(TipoDeUsuario)) {
         FormMenuPrincipal2 menuPrincipal2 = new FormMenuPrincipal2();
         menuPrincipal2.setVisible(true);
+        cerrado = true;
+    } else {
+        JOptionPane.showMessageDialog(this, "El usuario no tiene permisos para acceder a esta sección");
     }
 
-    // Cierra el formulario actual
-    this.dispose();
+    if (cerrado) {
+        // Cierra el formulario actual
+        this.dispose();
+    }
     }//GEN-LAST:event_jButtonInicioAdminActionPerformed
 
     private void jbtnCalcularAdminActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnCalcularAdminActionPerformed
@@ -553,16 +560,23 @@ public class FormEstadistica extends javax.swing.JFrame {
     String TipoDeUsuario = CLogin.getTipoUsuarioAdentro(); // Usa metodo
 
     // Crear el formulario de menú adecuado en función del tipo de usuario
-    if ("administrador".equals(TipoDeUsuario)) {
+    boolean cerrado = false;
+    if ("ADMIN".equals(TipoDeUsuario)) {
         FormMenuPrincipal menuPrincipal = new FormMenuPrincipal();
         menuPrincipal.setVisible(true);
-    } else if ("maestro".equals(TipoDeUsuario)) {
+        cerrado = true;
+    } else if ("DOCENTE".equals(TipoDeUsuario)) {
         FormMenuPrincipal2 menuPrincipal2 = new FormMenuPrincipal2();
         menuPrincipal2.setVisible(true);
+        cerrado = true;
+    } else {
+        JOptionPane.showMessageDialog(this, "El usuario no tiene permisos para acceder a esta sección");
     }
 
-    // Cierra el formulario actual
-    this.dispose();
+    if (cerrado) {
+        // Cierra el formulario actual
+        this.dispose();
+    }
         
     }//GEN-LAST:event_jButtonInicioSistemasActionPerformed
     
@@ -621,16 +635,23 @@ public class FormEstadistica extends javax.swing.JFrame {
     String TipoDeUsuario = CLogin.getTipoUsuarioAdentro(); // Usa metodo
 
     // Crear el formulario de menú adecuado en función del tipo de usuario
-    if ("administrador".equals(TipoDeUsuario)) {
+    boolean cerrado = false;
+    if ("ADMIN".equals(TipoDeUsuario)) {
         FormMenuPrincipal menuPrincipal = new FormMenuPrincipal();
         menuPrincipal.setVisible(true);
-    } else if ("maestro".equals(TipoDeUsuario)) {
+        cerrado = true;
+    } else if ("DOCENTE".equals(TipoDeUsuario)) {
         FormMenuPrincipal2 menuPrincipal2 = new FormMenuPrincipal2();
         menuPrincipal2.setVisible(true);
+        cerrado = true;
+    } else {
+        JOptionPane.showMessageDialog(this, "El usuario no tiene permisos para acceder a esta sección");
     }
 
-    // Cierra el formulario actual
-    this.dispose();
+    if (cerrado) {
+        // Cierra el formulario actual
+        this.dispose();
+    }
     }//GEN-LAST:event_jButtonInicioElectronicaActionPerformed
 
     private void jbtnCalcularElectronicaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnCalcularElectronicaActionPerformed

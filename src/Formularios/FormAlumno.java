@@ -25,6 +25,7 @@ public class FormAlumno extends javax.swing.JFrame {
         txtId.setEnabled(false);
         this.setLocationRelativeTo(null);
         CAlumnos objetoAlumnos = new CAlumnos();
+        objetoAlumnos.cargarProgramas(cboCarrera);
         objetoAlumnos.MostrarAlumnos(tbTotalAlumnos);
         
         
@@ -130,7 +131,7 @@ public class FormAlumno extends javax.swing.JFrame {
         jLabel1.setForeground(new java.awt.Color(255, 255, 255));
         jLabel1.setText("Promedio:");
 
-        cboCarrera.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Ingenieria de sistemas", "Ingenieria Electronica", "Administracion de empresas" }));
+        cboCarrera.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { }));
         cboCarrera.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cboCarreraActionPerformed(evt);
@@ -336,7 +337,9 @@ public class FormAlumno extends javax.swing.JFrame {
         txtNombres.setText("");
         txtApellidos.setText("");
         spnPromedio.setValue(0.0);
-        cboCarrera.setSelectedIndex(0);
+        if (cboCarrera.getItemCount() > 0) {
+            cboCarrera.setSelectedIndex(0);
+        }
 
         // Actualiza la tabla de alumnos
         objetoAlumno.MostrarAlumnos(tbTotalAlumnos);
@@ -354,16 +357,23 @@ public class FormAlumno extends javax.swing.JFrame {
         String TipoDeUsuario = CLogin.getTipoUsuarioAdentro(); // Usa metodo
 
         // Crear el formulario de menú adecuado en función del tipo de usuario
-        if ("administrador".equals(TipoDeUsuario)) {
+        boolean cerrado = false;
+        if ("ADMIN".equals(TipoDeUsuario)) {
             FormMenuPrincipal menuPrincipal = new FormMenuPrincipal();
             menuPrincipal.setVisible(true);
-        } else if ("maestro".equals(TipoDeUsuario)) {
+            cerrado = true;
+        } else if ("DOCENTE".equals(TipoDeUsuario)) {
             FormMenuPrincipal2 menuPrincipal2 = new FormMenuPrincipal2();
             menuPrincipal2.setVisible(true);
+            cerrado = true;
+        } else {
+            JOptionPane.showMessageDialog(this, "El usuario no tiene permisos para acceder a esta sección");
         }
 
-        // Cierra el formulario actual
-        this.dispose();
+        if (cerrado) {
+            // Cierra el formulario actual
+            this.dispose();
+        }
     }//GEN-LAST:event_jButtonInicioActionPerformed
 
     private void btnInformeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInformeActionPerformed
