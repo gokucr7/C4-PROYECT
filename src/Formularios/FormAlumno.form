@@ -283,11 +283,7 @@
         <Component class="javax.swing.JComboBox" name="cboCarrera">
           <Properties>
             <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-              <StringArray count="3">
-                <StringItem index="0" value="Ingenieria de sistemas"/>
-                <StringItem index="1" value="Ingenieria Electronica"/>
-                <StringItem index="2" value="Administracion de empresas"/>
-              </StringArray>
+              <StringArray count="0"/>
             </Property>
           </Properties>
           <Events>
