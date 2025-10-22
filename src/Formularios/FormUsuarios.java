@@ -14,8 +14,9 @@ public class FormUsuarios extends javax.swing.JFrame {
         txtId.setEnabled(false);
         this.setLocationRelativeTo(null);
         CUsuarios objetoUsuarios = new CUsuarios();
+        objetoUsuarios.cargarRoles(cboTipoDeUsuario);
         objetoUsuarios.MostrarUsuarios(tbTotalUsuarios);
-        
+
     }
 
     
@@ -108,7 +109,7 @@ public class FormUsuarios extends javax.swing.JFrame {
             }
         });
 
-        cboTipoDeUsuario.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ADMIN", "DOCENTE", "ESTUDIANTE" }));
+        cboTipoDeUsuario.setModel(new javax.swing.DefaultComboBoxModel<>());
         cboTipoDeUsuario.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cboTipoDeUsuarioActionPerformed(evt);
