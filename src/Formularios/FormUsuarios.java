@@ -108,7 +108,7 @@ public class FormUsuarios extends javax.swing.JFrame {
             }
         });
 
-        cboTipoDeUsuario.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "administrador", "maestro" }));
+        cboTipoDeUsuario.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ADMIN", "DOCENTE", "ESTUDIANTE" }));
         cboTipoDeUsuario.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cboTipoDeUsuarioActionPerformed(evt);
@@ -257,12 +257,14 @@ public class FormUsuarios extends javax.swing.JFrame {
        CUsuarios objetoUsuario = new CUsuarios();
        objetoUsuario.InsertarUsuarios(txtUsuarios, txtContrasena, cboTipoDeUsuario);
        objetoUsuario.MostrarUsuarios(tbTotalUsuarios);
+       txtContrasena.setText("");
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnModificarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnModificarActionPerformed
        CUsuarios objetoUsuario = new CUsuarios ();
        objetoUsuario.ModificarUsuarios(txtId, txtUsuarios, txtContrasena, cboTipoDeUsuario);
        objetoUsuario.MostrarUsuarios(tbTotalUsuarios);
+       txtContrasena.setText("");
     }//GEN-LAST:event_btnModificarActionPerformed
 
     private void tbTotalUsuariosMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tbTotalUsuariosMouseClicked
@@ -276,18 +278,18 @@ public class FormUsuarios extends javax.swing.JFrame {
     }//GEN-LAST:event_cboTipoDeUsuarioActionPerformed
 
     private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
-        // Obtén el ID del alumno a eliminar desde el campo de texto txtId
+        // Obtén el ID del usuario a eliminar desde el campo de texto txtId
         String idUsuarioAEliminar = txtId.getText();
 
         // Verifica si se ingresó un ID válido
         if (idUsuarioAEliminar.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Por favor, selecciona un alumno de la tabla para eliminar.");
+            JOptionPane.showMessageDialog(null, "Por favor, selecciona un usuario de la tabla para eliminar.");
         } else {
-        int confirmacion = JOptionPane.showConfirmDialog(null, "¿Estás seguro de que deseas eliminar a este alumno?", "Confirmación de Eliminación", JOptionPane.YES_NO_OPTION);
+        int confirmacion = JOptionPane.showConfirmDialog(null, "¿Estás seguro de que deseas eliminar a este usuario?", "Confirmación de Eliminación", JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
 
-        // Llama al método para eliminar el alumno en la clase CAlumnos
+        // Llama al método para eliminar el usuario en la clase CUsuarios
         CUsuarios objetoUsuario = new CUsuarios();
         objetoUsuario.EliminarUsuarios(txtId);
 
@@ -297,7 +299,7 @@ public class FormUsuarios extends javax.swing.JFrame {
         txtContrasena.setText("");
         cboTipoDeUsuario.setSelectedIndex(0);
 
-        // Actualiza la tabla de alumnos
+        // Actualiza la tabla de usuarios
         objetoUsuario.MostrarUsuarios(tbTotalUsuarios);
         }
         }
@@ -312,12 +314,15 @@ public class FormUsuarios extends javax.swing.JFrame {
     String TipoDeUsuario = CLogin.getTipoUsuarioAdentro(); // Usa metodo
 
     // Crear el formulario de menú adecuado en función del tipo de usuario
-    if ("administrador".equals(TipoDeUsuario)) {
+    if ("ADMIN".equals(TipoDeUsuario)) {
         FormMenuPrincipal menuPrincipal = new FormMenuPrincipal();
         menuPrincipal.setVisible(true);
-    } else if ("maestro".equals(TipoDeUsuario)) {
+    } else if ("DOCENTE".equals(TipoDeUsuario)) {
         FormMenuPrincipal2 menuPrincipal2 = new FormMenuPrincipal2();
         menuPrincipal2.setVisible(true);
+    } else {
+        JOptionPane.showMessageDialog(null, "Este usuario no tiene acceso al menú de administración");
+        return;
     }
 
     // Cierra el formulario actual
