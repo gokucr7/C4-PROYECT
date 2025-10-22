@@ -58,17 +58,22 @@ public class CUsuarios {
     }
     
     public void InsertarUsuarios (JTextField paramUsuarios, JTextField paramContrasena, JComboBox<String> paramTipoDeUsuario) {
-        
+
     setUsuario(paramUsuarios.getText());
     setContrasena(paramContrasena.getText());
     setTipoDeUsuario(paramTipoDeUsuario.getSelectedItem().toString());
 
-    String consulta = "INSERT INTO Usuarios (ingresoUsuario, ingresoContrasenia, tipo_de_usuario) VALUES (?, ?, ?);";
+    if (getUsuario().isBlank() || getContrasena().isBlank()) {
+        JOptionPane.showMessageDialog(null, "El usuario y la contraseña son obligatorios");
+        return;
+    }
+
+    String consulta = "INSERT INTO usuarios (ingresoUsuario, ingresoContrasenia, tipo_de_usuario) VALUES (?, ?, ?);";
 
     try {
         CallableStatement cs = Cconexion.estableceConexion().prepareCall(consulta);
         cs.setString(1, getUsuario());
-        cs.setString(2, getContrasena());
+        cs.setString(2, BCrypt.hashpw(getContrasena(), BCrypt.gensalt()));
         cs.setString(3, getTipoDeUsuario());
 
         cs.execute();
@@ -77,10 +82,10 @@ public class CUsuarios {
     } catch (HeadlessException | SQLException e) {
         JOptionPane.showMessageDialog(null, "No se insertó correctamente el usuario, error: " + e.toString());
     }
-        
+
     }
-    
-    
+
+
     public void MostrarUsuarios (JTable paramTablaTotalUsuarios) {
     DefaultTableModel modelo = new DefaultTableModel();
     TableRowSorter<TableModel> OrdenarTabla = new TableRowSorter<>(modelo);
@@ -89,13 +94,13 @@ public class CUsuarios {
     // Define las columnas de la tabla
     modelo.addColumn("Id");
     modelo.addColumn("Usuario");
-    modelo.addColumn("Contraseña");
-    modelo.addColumn("Tipo de usuario"); 
+    modelo.addColumn("Tipo de usuario");
+    modelo.addColumn("Descripción");
 
     paramTablaTotalUsuarios.setModel(modelo);
 
-    String sql = "select * from Usuarios;";
-    String[] datos = new String[4]; //
+    String sql = "SELECT u.id, u.ingresoUsuario, u.tipo_de_usuario, r.nombre FROM usuarios u LEFT JOIN rol r ON u.tipo_de_usuario = r.codigo";
+    String[] datos = new String[4];
 
     Statement st;
     try {
@@ -106,7 +111,7 @@ public class CUsuarios {
             datos[0] = rs.getString(1);
             datos[1] = rs.getString(2);
             datos[2] = rs.getString(3);
-            datos[3] = rs.getString(4); // tipo
+            datos[3] = rs.getString(4);
 
             modelo.addRow(datos);
         }
@@ -128,10 +133,9 @@ public class CUsuarios {
             if (fila >= 0) {
                 paramId.setText(paramTablaUsuarios.getValueAt(fila, 0).toString());
                 paramUsuarios.setText(paramTablaUsuarios.getValueAt(fila, 1).toString());
-                paramContrasena.setText(paramTablaUsuarios.getValueAt(fila, 2).toString());
+                paramContrasena.setText("");
 
-                // Para establecer el valor seleccionado en el JComboBox
-                String tipo = paramTablaUsuarios.getValueAt(fila, 3).toString();
+                String tipo = paramTablaUsuarios.getValueAt(fila, 2).toString();
                 paramTipoDeUsuario.setSelectedItem(tipo);
             } else {
                 JOptionPane.showMessageDialog(null, "Fila no seleccionada");
@@ -149,15 +153,26 @@ public class CUsuarios {
     setContrasena(paramContrasena.getText());
     setTipoDeUsuario(paramTipoDeUsuario.getSelectedItem().toString());
 
-    String consulta = "UPDATE Usuarios SET ingresoUsuario = ?, ingresoContrasenia = ?, tipo_de_usuario = ? WHERE id = ?;";
-    
+    boolean actualizarContrasena = getContrasena() != null && !getContrasena().isBlank();
+    String consulta;
+    if (actualizarContrasena) {
+        consulta = "UPDATE usuarios SET ingresoUsuario = ?, ingresoContrasenia = ?, tipo_de_usuario = ? WHERE id = ?";
+    } else {
+        consulta = "UPDATE usuarios SET ingresoUsuario = ?, tipo_de_usuario = ? WHERE id = ?";
+    }
+
     try {
         CallableStatement cs = Cconexion.estableceConexion().prepareCall(consulta);
-        
+
         cs.setString(1, getUsuario());
-        cs.setString(2, getContrasena());
-        cs.setString(3, getTipoDeUsuario());
-        cs.setInt(4, getCodigo());
+        if (actualizarContrasena) {
+            cs.setString(2, BCrypt.hashpw(getContrasena(), BCrypt.gensalt()));
+            cs.setString(3, getTipoDeUsuario());
+            cs.setInt(4, getCodigo());
+        } else {
+            cs.setString(2, getTipoDeUsuario());
+            cs.setInt(3, getCodigo());
+        }
 
         cs.execute();
 
@@ -166,16 +181,16 @@ public class CUsuarios {
         JOptionPane.showMessageDialog(null, "No se pudo modificar, error: " + e.toString());
     }
 }
-        
-        
+
+
         public void EliminarUsuarios(JTextField paramCodigo) {
             setCodigo(Integer.parseInt(paramCodigo.getText()));
-            
-            
-            String consulta = "DELETE from Usuarios WHERE id = ?;";
+
+
+            String consulta = "DELETE FROM usuarios WHERE id = ?";
             try {
                 CallableStatement cs  = Cconexion.estableceConexion().prepareCall(consulta);
-                
+
                 cs.setInt(1, getCodigo());
                 cs.execute();
                 

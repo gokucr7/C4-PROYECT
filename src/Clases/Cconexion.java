@@ -45,15 +45,16 @@ public class Cconexion {
             return;
         }
 
-        String sql = "INSERT INTO Usuarios (ingresoUsuario, ingresoContrasenia, tipo_de_usuario) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO usuarios (ingresoUsuario, ingresoContrasenia, tipo_de_usuario) VALUES (?, ?, ?)";
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setString(1, user);
-            pstmt.setString(2, password);
-            pstmt.setString(3, "maestro"); // Asigna "maestro" como el tipo de usuario
+            String hashed = BCrypt.hashpw(password, BCrypt.gensalt());
+            pstmt.setString(2, hashed);
+            pstmt.setString(3, "DOCENTE");
 
             int resultado = pstmt.executeUpdate();
             if (resultado > 0) {
-                JOptionPane.showMessageDialog(null, "Usuario registrado como 'maestro' correctamente");
+                JOptionPane.showMessageDialog(null, "Usuario registrado como 'DOCENTE' correctamente");
             } else {
                 JOptionPane.showMessageDialog(null, "Error al registrar el usuario");
             }
@@ -73,7 +74,7 @@ public class Cconexion {
 
 // ayuda a ver si el usuario existe
 private boolean usuarioExiste(String user, Connection conexion) {
-    String sql = "SELECT * FROM Usuarios WHERE ingresoUsuario = ?";
+    String sql = "SELECT 1 FROM usuarios WHERE ingresoUsuario = ?";
     try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
         pstmt.setString(1, user);
         ResultSet rs = pstmt.executeQuery();
