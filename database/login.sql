@@ -22,10 +22,29 @@ CREATE TABLE rol (
   nombre VARCHAR(64)  NOT NULL
 ) ENGINE=InnoDB;
 
+CREATE TABLE facultad (
+  id     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo VARCHAR(16)  NOT NULL UNIQUE,
+  nombre VARCHAR(160) NOT NULL
+) ENGINE=InnoDB;
+
 CREATE TABLE programa (
   id     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   codigo VARCHAR(16)  NOT NULL UNIQUE,      -- p.ej. SIS, IND, ADM
   nombre VARCHAR(120) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE facultad_programa (
+  facultad_id BIGINT UNSIGNED NOT NULL,
+  programa_id BIGINT UNSIGNED NOT NULL,
+  fecha_asignacion DATE NOT NULL DEFAULT (CURRENT_DATE),
+  PRIMARY KEY (facultad_id, programa_id),
+  CONSTRAINT fk_facultad_programa_facultad
+    FOREIGN KEY (facultad_id) REFERENCES facultad(id)
+      ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_facultad_programa_programa
+    FOREIGN KEY (programa_id) REFERENCES programa(id)
+      ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Semillas iniciales
@@ -33,6 +52,11 @@ INSERT INTO rol(codigo,nombre) VALUES
   ('ADMIN','Administrador'),
   ('DOCENTE','Docente'),
   ('ESTUDIANTE','Estudiante');
+
+INSERT INTO facultad(codigo,nombre) VALUES
+  ('FING','Facultad de Ingeniería'),
+  ('FADM','Facultad de Administración'),
+  ('FAGR','Facultad de Ciencias Agrarias');
 
 INSERT INTO programa(codigo,nombre) VALUES
   ('SIS','Ingeniería de Sistemas'),
@@ -45,8 +69,17 @@ INSERT INTO programa(codigo,nombre) VALUES
   ('IND','Ingeniería Industrial'),
   ('MEC','Ingeniería Mecatrónica');
 
+INSERT INTO facultad_programa(facultad_id, programa_id, fecha_asignacion)
+SELECT f.id, p.id, CURRENT_DATE
+  FROM programa p
+  JOIN facultad f ON (
+      (p.codigo IN ('SIS','ELE','IND','MEC') AND f.codigo = 'FING') OR
+      (p.codigo IN ('ADM','CON') AND f.codigo = 'FADM') OR
+      (p.codigo IN ('AGR','ZOO','SOC') AND f.codigo = 'FAGR')
+  );
+
 -- =========================================
--- 2) TABLA USUARIOS
+-- 2) USUARIOS Y PERFILES
 -- =========================================
 CREATE TABLE usuarios (
   id                   BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -64,55 +97,129 @@ CREATE TABLE usuarios (
 
 CREATE INDEX idx_usuarios_tipo_de_usuario ON usuarios(tipo_de_usuario);
 
+CREATE TABLE usuario_perfil (
+  id            BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  usuario_id    BIGINT UNSIGNED NOT NULL,
+  nombres       VARCHAR(120) NOT NULL,
+  apellidos     VARCHAR(120) NOT NULL,
+  correo        VARCHAR(160) NOT NULL,
+  telefono      VARCHAR(32)  NULL,
+  direccion     VARCHAR(200) NULL,
+  fecha_nacimiento DATE      NULL,
+  CONSTRAINT uk_usuario_perfil UNIQUE (usuario_id),
+  CONSTRAINT fk_usuario_perfil_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE docente (
+  id            BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  usuario_id    BIGINT UNSIGNED NOT NULL,
+  programa_id   BIGINT UNSIGNED NOT NULL,
+  especialidad  VARCHAR(160) NULL,
+  fecha_ingreso DATE         NOT NULL,
+  activo        TINYINT(1)   NOT NULL DEFAULT 1,
+  CONSTRAINT uk_docente_usuario UNIQUE (usuario_id),
+  CONSTRAINT fk_docente_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_docente_programa FOREIGN KEY (programa_id) REFERENCES programa(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
 -- =========================================
 -- 3) TABLA ALUMNOS
 -- =========================================
 CREATE TABLE alumnos (
-  id              BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  nombres         VARCHAR(120) NOT NULL,
-  apellidos       VARCHAR(120) NOT NULL,
-  promedio        DECIMAL(4,2) NOT NULL DEFAULT 0.00,
-  carrera         VARCHAR(16)  NOT NULL,
-  creado_en       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  actualizado_en  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                 BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  nombres            VARCHAR(120) NOT NULL,
+  apellidos          VARCHAR(120) NOT NULL,
+  promedio           DECIMAL(4,2) NOT NULL DEFAULT 0.00,
+  carrera            VARCHAR(16)  NOT NULL,
+  usuario_id         BIGINT UNSIGNED NULL,
+  asesor_docente_id  BIGINT UNSIGNED NULL,
+  creado_en          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT ck_alumnos_promedio CHECK (promedio >= 0.00 AND promedio <= 5.00),
   CONSTRAINT fk_alumnos_carrera
     FOREIGN KEY (carrera) REFERENCES programa(codigo)
-      ON UPDATE CASCADE ON DELETE RESTRICT
+      ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_alumnos_usuario
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+      ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT fk_alumnos_asesor
+    FOREIGN KEY (asesor_docente_id) REFERENCES docente(id)
+      ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT uk_alumnos_usuario UNIQUE (usuario_id)
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_alumnos_carrera ON alumnos(carrera);
+CREATE INDEX idx_alumnos_asesor ON alumnos(asesor_docente_id);
 
+-- =========================================
+-- 4) PERIODOS, ASIGNATURAS Y CURSOS
+-- =========================================
 CREATE TABLE periodo_academico (
-  id         BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  codigo     VARCHAR(32)  NOT NULL UNIQUE,
-  nombre     VARCHAR(120) NOT NULL,
-  fecha_inicio DATE       NOT NULL,
-  fecha_fin    DATE       NOT NULL
+  id           BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo       VARCHAR(32)  NOT NULL UNIQUE,
+  nombre       VARCHAR(120) NOT NULL,
+  fecha_inicio DATE         NOT NULL,
+  fecha_fin    DATE         NOT NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE asignatura (
-  id         BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  codigo     VARCHAR(32)  NOT NULL UNIQUE,
-  nombre     VARCHAR(160) NOT NULL,
-  programa   VARCHAR(16)  NOT NULL,
+  id             BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo         VARCHAR(32)  NOT NULL UNIQUE,
+  nombre         VARCHAR(160) NOT NULL,
+  programa       VARCHAR(16)  NOT NULL,
+  creditos       TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  horas_semanales TINYINT UNSIGNED NOT NULL DEFAULT 4,
   CONSTRAINT fk_asignatura_programa FOREIGN KEY (programa) REFERENCES programa(codigo)
     ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
+CREATE TABLE curso (
+  id             BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  asignatura_id  BIGINT UNSIGNED NOT NULL,
+  docente_id     BIGINT UNSIGNED NOT NULL,
+  periodo_id     BIGINT UNSIGNED NOT NULL,
+  cupo           SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+  aula           VARCHAR(32)  NULL,
+  horario        VARCHAR(120) NULL,
+  estado         ENUM('PLANIFICADO','PUBLICADO','CERRADO') NOT NULL DEFAULT 'PLANIFICADO',
+  CONSTRAINT fk_curso_asignatura FOREIGN KEY (asignatura_id) REFERENCES asignatura(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_curso_docente FOREIGN KEY (docente_id) REFERENCES docente(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_curso_periodo FOREIGN KEY (periodo_id) REFERENCES periodo_academico(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT uk_curso_asignatura_docente_periodo UNIQUE (asignatura_id, docente_id, periodo_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE programa_coordinador (
+  programa_id BIGINT UNSIGNED NOT NULL,
+  docente_id  BIGINT UNSIGNED NOT NULL,
+  fecha_inicio DATE NOT NULL,
+  fecha_fin    DATE NULL,
+  PRIMARY KEY (programa_id, docente_id, fecha_inicio),
+  CONSTRAINT fk_programa_coordinador_programa FOREIGN KEY (programa_id) REFERENCES programa(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_programa_coordinador_docente FOREIGN KEY (docente_id) REFERENCES docente(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =========================================
+-- 5) MATRÍCULAS Y NOTAS
+-- =========================================
 CREATE TABLE matricula (
   id             BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   alumno_id      BIGINT UNSIGNED NOT NULL,
-  asignatura_id  BIGINT UNSIGNED NOT NULL,
-  periodo_id     BIGINT UNSIGNED NOT NULL,
+  curso_id       BIGINT UNSIGNED NOT NULL,
   fecha_registro DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  estado         ENUM('INSCRITO','RETIRADO','APROBADO','REPROBADO') NOT NULL DEFAULT 'INSCRITO',
   CONSTRAINT fk_matricula_alumno FOREIGN KEY (alumno_id) REFERENCES alumnos(id)
     ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_matricula_asignatura FOREIGN KEY (asignatura_id) REFERENCES asignatura(id)
+  CONSTRAINT fk_matricula_curso FOREIGN KEY (curso_id) REFERENCES curso(id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT fk_matricula_periodo FOREIGN KEY (periodo_id) REFERENCES periodo_academico(id)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT uk_matricula UNIQUE (alumno_id, asignatura_id, periodo_id)
+  CONSTRAINT uk_matricula UNIQUE (alumno_id, curso_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE nota (
@@ -126,9 +233,12 @@ CREATE TABLE nota (
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_matricula_alumno ON matricula(alumno_id);
-CREATE INDEX idx_matricula_periodo ON matricula(periodo_id);
+CREATE INDEX idx_matricula_curso ON matricula(curso_id);
 CREATE INDEX idx_nota_matricula ON nota(matricula_id);
 
+-- =========================================
+-- 6) AUDITORÍA
+-- =========================================
 CREATE TABLE auditoria_cambios (
   id               BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   usuario          VARCHAR(120) NOT NULL,
@@ -176,7 +286,7 @@ FOR EACH ROW
 BEGIN
   INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
   VALUES (CURRENT_USER(), 'alumnos', 'INSERT', NEW.id, NULL,
-          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera));
+          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera, 'usuario_id', NEW.usuario_id));
 END $$
 
 CREATE TRIGGER trg_alumnos_update
@@ -185,8 +295,8 @@ FOR EACH ROW
 BEGIN
   INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
   VALUES (CURRENT_USER(), 'alumnos', 'UPDATE', NEW.id,
-          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera),
-          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera));
+          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera, 'usuario_id', OLD.usuario_id),
+          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera, 'usuario_id', NEW.usuario_id));
 END $$
 
 CREATE TRIGGER trg_alumnos_delete
@@ -195,13 +305,13 @@ FOR EACH ROW
 BEGIN
   INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
   VALUES (CURRENT_USER(), 'alumnos', 'DELETE', OLD.id,
-          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera), NULL);
+          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera, 'usuario_id', OLD.usuario_id), NULL);
 END $$
 
 DELIMITER ;
 
 -- =========================================
--- 4) USUARIO ADMINISTRADOR POR DEFECTO
+-- 7) USUARIOS SEMILLA
 -- =========================================
 -- Contraseña 'admin123' cifrada con bcrypt (puedes cambiarla cuando gustes)
 INSERT INTO usuarios (ingresoUsuario, ingresoContrasenia, tipo_de_usuario)
@@ -210,6 +320,11 @@ VALUES (
   '$2y$10$E9nPo.Eys2SbkDXOiv1sEuLT4Va2eG5n0UZANUeAFX3K8t1Bz88.i', -- admin123
   'ADMIN'
 );
+
+INSERT INTO usuario_perfil (usuario_id, nombres, apellidos, correo)
+SELECT u.id, 'Administrador', 'Principal', 'admin@example.com'
+  FROM usuarios u
+ WHERE u.ingresoUsuario = 'admin';
 
 -- =========================================
 -- LISTO
