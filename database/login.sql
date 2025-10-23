@@ -35,7 +35,15 @@ INSERT INTO rol(codigo,nombre) VALUES
   ('ESTUDIANTE','Estudiante');
 
 INSERT INTO programa(codigo,nombre) VALUES
-  ('SIS','Ingeniería de Sistemas');
+  ('SIS','Ingeniería de Sistemas'),
+  ('ELE','Ingeniería Electrónica'),
+  ('ADM','Administración de Empresas'),
+  ('AGR','Agronomía'),
+  ('ZOO','Zootecnia'),
+  ('CON','Contaduría Pública'),
+  ('SOC','Licenciatura en Sociales'),
+  ('IND','Ingeniería Industrial'),
+  ('MEC','Ingeniería Mecatrónica');
 
 -- =========================================
 -- 2) TABLA USUARIOS

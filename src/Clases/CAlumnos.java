@@ -169,7 +169,53 @@ public class CAlumnos {
 
 }
 
-        public void SeleccionarAlumno(JTable paramTablaAlumnos, JTextField paramId, JTextField paramNombres, JTextField paramApellidos, JSpinner paramPromedio, JComboBox<String> paramCarrera) {
+    private DefaultTableModel crearModeloTablaAlumnos() {
+        DefaultTableModel modelo = new DefaultTableModel();
+        modelo.addColumn("Id");
+        modelo.addColumn("Nombres");
+        modelo.addColumn("Apellidos");
+        modelo.addColumn("Promedio");
+        modelo.addColumn("Carrera");
+        return modelo;
+    }
+
+    public void MostrarAlumnosPorCarrera(JTable paramTabla, String codigoCarrera) {
+        DefaultTableModel modelo = crearModeloTablaAlumnos();
+        paramTabla.setModel(modelo);
+
+        String sql = "SELECT a.id, a.nombres, a.apellidos, a.promedio, CONCAT(a.carrera, ' - ', COALESCE(p.nombre, '')) AS programa FROM alumnos a LEFT JOIN programa p ON a.carrera = p.codigo WHERE a.carrera = ?";
+
+        try (Connection conn = Cconexion.estableceConexion();
+             PreparedStatement ps = conn != null ? conn.prepareStatement(sql) : null) {
+            if (ps == null) {
+                JOptionPane.showMessageDialog(null, "No se pudo establecer conexión con la base de datos");
+                return;
+            }
+
+            ps.setString(1, codigoCarrera);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Object[] fila = new Object[5];
+                    fila[0] = rs.getString(1);
+                    fila[1] = rs.getString(2);
+                    fila[2] = rs.getString(3);
+                    fila[3] = rs.getString(4);
+                    fila[4] = rs.getString(5);
+                    modelo.addRow(fila);
+                }
+            }
+
+            paramTabla.setModel(modelo);
+            TableRowSorter<TableModel> ordenarTabla = new TableRowSorter<>(modelo);
+            paramTabla.setRowSorter(ordenarTabla);
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al mostrar los registros de la carrera seleccionada: " + e.getMessage());
+        }
+    }
+
+    public void SeleccionarAlumno(JTable paramTablaAlumnos, JTextField paramId, JTextField paramNombres, JTextField paramApellidos, JSpinner paramPromedio, JComboBox<String> paramCarrera) {
     try {
         int fila = paramTablaAlumnos.getSelectedRow();
         if (fila >= 0) {
@@ -245,145 +291,6 @@ public class CAlumnos {
         }
     }
 
-        public void MostrarAlumnosIngenieriaSistemas(JTable paramTabla) {
-        DefaultTableModel modelo = new DefaultTableModel();
-
-        // Defino las columnas de la tabla
-        modelo.addColumn("Id");
-        modelo.addColumn("Nombres");
-        modelo.addColumn("Apellidos");
-        modelo.addColumn("Promedio");
-        modelo.addColumn("Carrera");
-
-        paramTabla.setModel(modelo);
-
-        String sql = "SELECT a.id, a.nombres, a.apellidos, a.promedio, CONCAT(a.carrera, ' - ', COALESCE(p.nombre, '')) AS programa FROM alumnos a LEFT JOIN programa p ON a.carrera = p.codigo WHERE a.carrera = 'SIS'";
-        String[] datos = new String[5];
-
-        Statement st;
-        try {
-            st = Cconexion.estableceConexion().createStatement();
-            ResultSet rs = st.executeQuery(sql);
-
-            while (rs.next()) {
-                datos[0] = rs.getString(1);
-                datos[1] = rs.getString(2);
-                datos[2] = rs.getString(3);
-                datos[3] = rs.getString(4);
-                datos[4] = rs.getString(5);
-
-                modelo.addRow(datos);
-            }
-
-            paramTabla.setModel(modelo);
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error al mostrar los registros de Ingeniería de Sistemas: " + e.getMessage());
-        }
-    }
-
-    public void MostrarAlumnosIngenieriaElectronica(JTable paramTabla) {
-        DefaultTableModel modelo = new DefaultTableModel();
-
-        // Define las columnas de la tabla
-        modelo.addColumn("Id");
-        modelo.addColumn("Nombres");
-        modelo.addColumn("Apellidos");
-        modelo.addColumn("Promedio");
-        modelo.addColumn("Carrera");
-
-        paramTabla.setModel(modelo);
-
-        String sql = "SELECT a.id, a.nombres, a.apellidos, a.promedio, CONCAT(a.carrera, ' - ', COALESCE(p.nombre, '')) AS programa FROM alumnos a LEFT JOIN programa p ON a.carrera = p.codigo WHERE a.carrera = 'ELE'";
-        String[] datos = new String[5];
-
-        Statement st;
-        try {
-            st = Cconexion.estableceConexion().createStatement();
-            ResultSet rs = st.executeQuery(sql);
-
-            while (rs.next()) {
-                datos[0] = rs.getString(1);
-                datos[1] = rs.getString(2);
-                datos[2] = rs.getString(3);
-                datos[3] = rs.getString(4);
-                datos[4] = rs.getString(5);
-
-                modelo.addRow(datos);
-            }
-
-            paramTabla.setModel(modelo);
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error al mostrar los registros de Ingeniería Electronica: " + e.getMessage());
-        }
-    }
-
-    public void MostrarAlumnosAdministracionEmpresas(JTable paramTabla) {
-        DefaultTableModel modelo = new DefaultTableModel();
-
-        // Define las columnas de la tabla
-        modelo.addColumn("Id");
-        modelo.addColumn("Nombres");
-        modelo.addColumn("Apellidos");
-        modelo.addColumn("Promedio");
-        modelo.addColumn("Carrera");
-
-        paramTabla.setModel(modelo);
-
-        String sql = "SELECT a.id, a.nombres, a.apellidos, a.promedio, CONCAT(a.carrera, ' - ', COALESCE(p.nombre, '')) AS programa FROM alumnos a LEFT JOIN programa p ON a.carrera = p.codigo WHERE a.carrera = 'ADM'";
-        String[] datos = new String[5];
-
-        Statement st;
-        try {
-            st = Cconexion.estableceConexion().createStatement();
-            ResultSet rs = st.executeQuery(sql);
-
-            while (rs.next()) {
-                datos[0] = rs.getString(1);
-                datos[1] = rs.getString(2);
-                datos[2] = rs.getString(3);
-                datos[3] = rs.getString(4);
-                datos[4] = rs.getString(5);
-
-                modelo.addRow(datos);
-            }
-
-            paramTabla.setModel(modelo);
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error al mostrar los registros de Ingeniería de Sistemas: " + e.getMessage());
-        }
-    }
-
-     public List<Double> getPromediosIngenieriaSistemas() {
-        List<Double> promedios = new ArrayList<>();
-        Connection conexion = null;
-
-        try {
-            conexion = Cconexion.estableceConexion(); // Establece la conexión usando la clase Cconexion.
-
-            String consulta = "SELECT promedio FROM alumnos WHERE carrera = 'SIS'";
-            try (PreparedStatement statement = conexion.prepareStatement(consulta);
-                 ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    double promedio = resultSet.getDouble("promedio");
-                    promedios.add(promedio);
-                }
-            }
-        } catch (SQLException e) {
-        } finally {
-            if (conexion != null) {
-                try {
-                    conexion.close();
-                } catch (SQLException e) {
-                }
-            }
-        }
-
-        return promedios;
-    }
-
     private String extraerCodigoPrograma(Object seleccionado) {
         if (seleccionado == null) {
             return "";
@@ -409,47 +316,21 @@ public class CAlumnos {
         }
     }
 
-    public List<Double> getPromediosIngenieriaElectronica() {
+    public List<Double> getPromediosPorCarrera(String codigoCarrera) {
         List<Double> promedios = new ArrayList<>();
         Connection conexion = null;
 
         try {
             conexion = Cconexion.estableceConexion(); // Establece la conexión usando la clase Cconexion.
 
-            String consulta = "SELECT promedio FROM alumnos WHERE carrera = 'ELE'";
-            try (PreparedStatement statement = conexion.prepareStatement(consulta);
-                 ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    double promedio = resultSet.getDouble("promedio");
-                    promedios.add(promedio);
-                }
-            }
-        } catch (SQLException e) {
-        } finally {
-            if (conexion != null) {
-                try {
-                    conexion.close();
-                } catch (SQLException e) {
-                }
-            }
-        }
-
-        return promedios;
-    }
-
-    public List<Double> getPromediosAdministracionEmpresas() {
-        List<Double> promedios = new ArrayList<>();
-        Connection conexion = null;
-
-        try {
-            conexion = Cconexion.estableceConexion(); // Establece la conexión usando la clase Cconexion.
-
-            String consulta = "SELECT promedio FROM alumnos WHERE carrera = 'ADM'";
-            try (PreparedStatement statement = conexion.prepareStatement(consulta);
-                 ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    double promedio = resultSet.getDouble("promedio");
-                    promedios.add(promedio);
+            String consulta = "SELECT promedio FROM alumnos WHERE carrera = ?";
+            try (PreparedStatement statement = conexion.prepareStatement(consulta)) {
+                statement.setString(1, codigoCarrera);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        double promedio = resultSet.getDouble("promedio");
+                        promedios.add(promedio);
+                    }
                 }
             }
         } catch (SQLException e) {
