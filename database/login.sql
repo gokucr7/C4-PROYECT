@@ -22,6 +22,12 @@ CREATE TABLE rol (
   nombre VARCHAR(64)  NOT NULL
 ) ENGINE=InnoDB;
 
+CREATE TABLE estado_alumno (
+  id     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo VARCHAR(16)  NOT NULL UNIQUE,
+  nombre VARCHAR(120) NOT NULL
+) ENGINE=InnoDB;
+
 CREATE TABLE facultad (
   id     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   codigo VARCHAR(16)  NOT NULL UNIQUE,
@@ -52,6 +58,12 @@ INSERT INTO rol(codigo,nombre) VALUES
   ('ADMIN','Administrador'),
   ('DOCENTE','Docente'),
   ('ESTUDIANTE','Estudiante');
+
+INSERT INTO estado_alumno(codigo,nombre) VALUES
+  ('ACTIVO','Alumno activo'),
+  ('INACTIVO','Alumno inactivo'),
+  ('GRADUADO','Alumno graduado'),
+  ('SUSPENDIDO','Alumno suspendido');
 
 INSERT INTO facultad(codigo,nombre) VALUES
   ('FING','Facultad de Ingeniería'),
@@ -133,6 +145,7 @@ CREATE TABLE alumnos (
   nombres            VARCHAR(120) NOT NULL,
   apellidos          VARCHAR(120) NOT NULL,
   promedio           DECIMAL(4,2) NOT NULL DEFAULT 0.00,
+  estado_codigo      VARCHAR(16)  NOT NULL DEFAULT 'ACTIVO',
   carrera            VARCHAR(16)  NOT NULL,
   usuario_id         BIGINT UNSIGNED NULL,
   asesor_docente_id  BIGINT UNSIGNED NULL,
@@ -141,6 +154,9 @@ CREATE TABLE alumnos (
   CONSTRAINT ck_alumnos_promedio CHECK (promedio >= 0.00 AND promedio <= 5.00),
   CONSTRAINT fk_alumnos_carrera
     FOREIGN KEY (carrera) REFERENCES programa(codigo)
+      ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_alumnos_estado
+    FOREIGN KEY (estado_codigo) REFERENCES estado_alumno(codigo)
       ON UPDATE CASCADE ON DELETE RESTRICT,
   CONSTRAINT fk_alumnos_usuario
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
@@ -153,6 +169,24 @@ CREATE TABLE alumnos (
 
 CREATE INDEX idx_alumnos_carrera ON alumnos(carrera);
 CREATE INDEX idx_alumnos_asesor ON alumnos(asesor_docente_id);
+CREATE INDEX idx_alumnos_estado ON alumnos(estado_codigo);
+
+CREATE TABLE alumno_estado_historial (
+  id            BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  alumno_id     BIGINT UNSIGNED NOT NULL,
+  estado_codigo VARCHAR(16)     NOT NULL,
+  observacion   VARCHAR(200)    NULL,
+  fecha_cambio  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_alumno_estado_historial_alumno
+    FOREIGN KEY (alumno_id) REFERENCES alumnos(id)
+      ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_alumno_estado_historial_estado
+    FOREIGN KEY (estado_codigo) REFERENCES estado_alumno(codigo)
+      ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_alumno_estado_historial_alumno ON alumno_estado_historial(alumno_id);
+CREATE INDEX idx_alumno_estado_historial_estado ON alumno_estado_historial(estado_codigo);
 
 -- =========================================
 -- 4) PERIODOS, ASIGNATURAS Y CURSOS
@@ -194,6 +228,81 @@ CREATE TABLE curso (
   CONSTRAINT uk_curso_asignatura_docente_periodo UNIQUE (asignatura_id, docente_id, periodo_id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE campus (
+  id     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo VARCHAR(16)  NOT NULL UNIQUE,
+  nombre VARCHAR(160) NOT NULL,
+  direccion VARCHAR(200) NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE aula (
+  id        BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  campus_id BIGINT UNSIGNED NOT NULL,
+  codigo    VARCHAR(16)  NOT NULL,
+  capacidad SMALLINT UNSIGNED NOT NULL,
+  tipo      ENUM('TEORICA','LABORATORIO','AUDITORIO') NOT NULL DEFAULT 'TEORICA',
+  CONSTRAINT uk_aula UNIQUE (campus_id, codigo),
+  CONSTRAINT fk_aula_campus FOREIGN KEY (campus_id) REFERENCES campus(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE curso_sesion (
+  id         BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  curso_id   BIGINT UNSIGNED NOT NULL,
+  aula_id    BIGINT UNSIGNED NOT NULL,
+  dia_semana ENUM('LUN','MAR','MIE','JUE','VIE','SAB') NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin    TIME NOT NULL,
+  CONSTRAINT fk_curso_sesion_curso FOREIGN KEY (curso_id) REFERENCES curso(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_curso_sesion_aula FOREIGN KEY (aula_id) REFERENCES aula(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_curso_sesion_curso ON curso_sesion(curso_id);
+CREATE INDEX idx_curso_sesion_aula ON curso_sesion(aula_id);
+
+CREATE TABLE tipo_documento (
+  id     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo VARCHAR(16)  NOT NULL UNIQUE,
+  nombre VARCHAR(120) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE alumno_documento (
+  id                BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  alumno_id         BIGINT UNSIGNED NOT NULL,
+  tipo_documento_id BIGINT UNSIGNED NOT NULL,
+  numero            VARCHAR(32)  NOT NULL,
+  emisor            VARCHAR(120) NULL,
+  fecha_emision     DATE         NULL,
+  CONSTRAINT uk_alumno_documento UNIQUE (alumno_id, tipo_documento_id),
+  CONSTRAINT fk_alumno_documento_alumno FOREIGN KEY (alumno_id) REFERENCES alumnos(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_alumno_documento_tipo FOREIGN KEY (tipo_documento_id) REFERENCES tipo_documento(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+INSERT INTO tipo_documento(codigo, nombre) VALUES
+  ('DNI','Documento Nacional de Identidad'),
+  ('PAS','Pasaporte'),
+  ('CE','Carné de extranjería');
+
+INSERT INTO campus(codigo, nombre, direccion) VALUES
+  ('CENTRAL','Campus Central','Av. Principal 123'),
+  ('NORTE','Campus Norte','Carretera 45 Km 2'),
+  ('SUR','Campus Sur','Ruta Provincial 12');
+
+INSERT INTO aula(campus_id, codigo, capacidad, tipo)
+SELECT c.id, datos.codigo, datos.capacidad, datos.tipo
+  FROM campus c
+  JOIN (
+        SELECT 'CENTRAL' campus_codigo, 'A101' codigo, 40 capacidad, 'TEORICA' tipo UNION ALL
+        SELECT 'CENTRAL', 'L201', 25, 'LABORATORIO' UNION ALL
+        SELECT 'NORTE', 'A102', 35, 'TEORICA' UNION ALL
+        SELECT 'SUR', 'AUD1', 120, 'AUDITORIO'
+       ) datos
+    ON datos.campus_codigo = c.codigo;
+
 CREATE TABLE programa_coordinador (
   programa_id BIGINT UNSIGNED NOT NULL,
   docente_id  BIGINT UNSIGNED NOT NULL,
@@ -205,7 +314,6 @@ CREATE TABLE programa_coordinador (
   CONSTRAINT fk_programa_coordinador_docente FOREIGN KEY (docente_id) REFERENCES docente(id)
     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
-
 -- =========================================
 -- 5) MATRÍCULAS Y NOTAS
 -- =========================================
@@ -252,6 +360,25 @@ CREATE TABLE auditoria_cambios (
 
 DELIMITER $$
 
+CREATE TRIGGER trg_alumnos_estado_insert
+AFTER INSERT ON alumnos
+FOR EACH ROW
+BEGIN
+  INSERT INTO alumno_estado_historial(alumno_id, estado_codigo, observacion)
+  VALUES (NEW.id, NEW.estado_codigo, 'Estado inicial');
+END $$
+
+CREATE TRIGGER trg_alumnos_estado_update
+AFTER UPDATE ON alumnos
+FOR EACH ROW
+BEGIN
+  IF NEW.estado_codigo <> OLD.estado_codigo THEN
+    INSERT INTO alumno_estado_historial(alumno_id, estado_codigo, observacion)
+    VALUES (NEW.id, NEW.estado_codigo,
+            CONCAT('Cambio de estado desde ', OLD.estado_codigo, ' a ', NEW.estado_codigo));
+  END IF;
+END $$
+
 CREATE TRIGGER trg_usuarios_insert
 AFTER INSERT ON usuarios
 FOR EACH ROW
@@ -286,7 +413,7 @@ FOR EACH ROW
 BEGIN
   INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
   VALUES (CURRENT_USER(), 'alumnos', 'INSERT', NEW.id, NULL,
-          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera, 'usuario_id', NEW.usuario_id));
+          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'estado', NEW.estado_codigo, 'carrera', NEW.carrera, 'usuario_id', NEW.usuario_id));
 END $$
 
 CREATE TRIGGER trg_alumnos_update
@@ -295,8 +422,8 @@ FOR EACH ROW
 BEGIN
   INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
   VALUES (CURRENT_USER(), 'alumnos', 'UPDATE', NEW.id,
-          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera, 'usuario_id', OLD.usuario_id),
-          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera, 'usuario_id', NEW.usuario_id));
+          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'estado', OLD.estado_codigo, 'carrera', OLD.carrera, 'usuario_id', OLD.usuario_id),
+          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'estado', NEW.estado_codigo, 'carrera', NEW.carrera, 'usuario_id', NEW.usuario_id));
 END $$
 
 CREATE TRIGGER trg_alumnos_delete
@@ -305,7 +432,7 @@ FOR EACH ROW
 BEGIN
   INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
   VALUES (CURRENT_USER(), 'alumnos', 'DELETE', OLD.id,
-          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera, 'usuario_id', OLD.usuario_id), NULL);
+          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'estado', OLD.estado_codigo, 'carrera', OLD.carrera, 'usuario_id', OLD.usuario_id), NULL);
 END $$
 
 DELIMITER ;
