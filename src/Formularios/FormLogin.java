@@ -222,7 +222,7 @@ public class FormLogin extends javax.swing.JFrame {
 
     private void btnEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEntryActionPerformed
         Clases.CLogin objetoLogin = new Clases.CLogin();
-        objetoLogin.validaUsuario(jTextUser, jTextPass);
+        objetoLogin.validaUsuario(this, jTextUser, jTextPass);
         
     }//GEN-LAST:event_btnEntryActionPerformed
 

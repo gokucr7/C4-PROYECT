@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -21,19 +22,22 @@ public class CLogin {
 
     private static String TipoUsuarioAdentro;
 
-    public String validaUsuario(JTextField usuario, JPasswordField contrasenia) {
+    public boolean validaUsuario(FormLogin origen, JTextField usuario, JPasswordField contrasenia) {
         String username = usuario.getText();
         if (username == null || username.isBlank()) {
             JOptionPane.showMessageDialog(null, "Ingrese el usuario");
-            return null;
+            contrasenia.setText("");
+            return false;
         }
 
-        String inputPassword = String.valueOf(contrasenia.getPassword());
+        char[] input = contrasenia.getPassword();
+        String inputPassword = String.valueOf(input);
+        Arrays.fill(input, '\0');
 
         try (Connection conn = Cconexion.estableceConexion()) {
             if (conn == null) {
                 JOptionPane.showMessageDialog(null, "No se pudo establecer la conexión con la base de datos");
-                return null;
+                return false;
             }
 
             String sql = "SELECT ingresoContrasenia, tipo_de_usuario, activo FROM usuarios WHERE ingresoUsuario = ?";
@@ -42,12 +46,12 @@ public class CLogin {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (!rs.next()) {
                         JOptionPane.showMessageDialog(null, "El usuario es incorrecto, vuelva a intentar");
-                        return null;
+                        return false;
                     }
 
                     if (rs.getInt("activo") != 1) {
                         JOptionPane.showMessageDialog(null, "El usuario se encuentra inactivo");
-                        return null;
+                        return false;
                     }
 
                     String storedHash = rs.getString("ingresoContrasenia");
@@ -55,17 +59,20 @@ public class CLogin {
 
                     if (!validarPassword(conn, username, inputPassword, storedHash)) {
                         JOptionPane.showMessageDialog(null, "Contraseña incorrecta, vuelva a intentar");
-                        return null;
+                        return false;
                     }
 
                     TipoUsuarioAdentro = roleCode;
-                    abrirMenuPorRol(roleCode);
+                    abrirMenuPorRol(origen, roleCode);
+                    return true;
                 }
             }
         } catch (HeadlessException | SQLException e) {
             JOptionPane.showMessageDialog(null, "ERROR: " + e.getMessage());
+        } finally {
+            contrasenia.setText("");
         }
-        return null;
+        return false;
     }
 
     public static String getTipoUsuarioAdentro() {
@@ -120,17 +127,16 @@ public class CLogin {
         return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
     }
 
-    private void abrirMenuPorRol(String tipoUsuario) {
+    private void abrirMenuPorRol(FormLogin origen, String tipoUsuario) {
+        if (origen != null) {
+            origen.dispose();
+        }
         switch (tipoUsuario) {
             case "ADMIN" -> {
-                FormLogin form = new FormLogin();
-                form.dispose();
                 FormMenuPrincipal objetoMenu = new FormMenuPrincipal();
                 objetoMenu.setVisible(true);
             }
             case "DOCENTE" -> {
-                FormLogin form = new FormLogin();
-                form.dispose();
                 FormMenuPrincipal2 objetoMenu2 = new FormMenuPrincipal2();
                 objetoMenu2.setVisible(true);
             }
