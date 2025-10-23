@@ -54,6 +54,7 @@ CREATE TABLE usuarios (
   ingresoContrasenia   VARCHAR(255) NOT NULL,
   tipo_de_usuario      VARCHAR(32)  NOT NULL,
   activo               TINYINT(1)   NOT NULL DEFAULT 1,
+  ultimo_acceso        DATETIME     NULL,
   creado_en            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   actualizado_en       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_usuarios_tipo_de_usuario
@@ -81,6 +82,123 @@ CREATE TABLE alumnos (
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_alumnos_carrera ON alumnos(carrera);
+
+CREATE TABLE periodo_academico (
+  id         BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo     VARCHAR(32)  NOT NULL UNIQUE,
+  nombre     VARCHAR(120) NOT NULL,
+  fecha_inicio DATE       NOT NULL,
+  fecha_fin    DATE       NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE asignatura (
+  id         BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  codigo     VARCHAR(32)  NOT NULL UNIQUE,
+  nombre     VARCHAR(160) NOT NULL,
+  programa   VARCHAR(16)  NOT NULL,
+  CONSTRAINT fk_asignatura_programa FOREIGN KEY (programa) REFERENCES programa(codigo)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE matricula (
+  id             BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  alumno_id      BIGINT UNSIGNED NOT NULL,
+  asignatura_id  BIGINT UNSIGNED NOT NULL,
+  periodo_id     BIGINT UNSIGNED NOT NULL,
+  fecha_registro DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_matricula_alumno FOREIGN KEY (alumno_id) REFERENCES alumnos(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_matricula_asignatura FOREIGN KEY (asignatura_id) REFERENCES asignatura(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_matricula_periodo FOREIGN KEY (periodo_id) REFERENCES periodo_academico(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT uk_matricula UNIQUE (alumno_id, asignatura_id, periodo_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE nota (
+  id             BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  matricula_id   BIGINT UNSIGNED NOT NULL,
+  descripcion    VARCHAR(120)    NOT NULL,
+  valor          DECIMAL(4,2)    NOT NULL CHECK (valor >= 0.00 AND valor <= 5.00),
+  registrado_en  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_nota_matricula FOREIGN KEY (matricula_id) REFERENCES matricula(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_matricula_alumno ON matricula(alumno_id);
+CREATE INDEX idx_matricula_periodo ON matricula(periodo_id);
+CREATE INDEX idx_nota_matricula ON nota(matricula_id);
+
+CREATE TABLE auditoria_cambios (
+  id               BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  usuario          VARCHAR(120) NOT NULL,
+  tabla_afectada   VARCHAR(64)  NOT NULL,
+  accion           VARCHAR(16)  NOT NULL,
+  registro_id      BIGINT UNSIGNED,
+  valores_anteriores JSON NULL,
+  valores_nuevos     JSON NULL,
+  creado_en        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_usuarios_insert
+AFTER INSERT ON usuarios
+FOR EACH ROW
+BEGIN
+  INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
+  VALUES (CURRENT_USER(), 'usuarios', 'INSERT', NEW.id, NULL,
+          JSON_OBJECT('ingresoUsuario', NEW.ingresoUsuario, 'tipo_de_usuario', NEW.tipo_de_usuario, 'activo', NEW.activo));
+END $$
+
+CREATE TRIGGER trg_usuarios_update
+AFTER UPDATE ON usuarios
+FOR EACH ROW
+BEGIN
+  INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
+  VALUES (CURRENT_USER(), 'usuarios', 'UPDATE', NEW.id,
+          JSON_OBJECT('ingresoUsuario', OLD.ingresoUsuario, 'tipo_de_usuario', OLD.tipo_de_usuario, 'activo', OLD.activo),
+          JSON_OBJECT('ingresoUsuario', NEW.ingresoUsuario, 'tipo_de_usuario', NEW.tipo_de_usuario, 'activo', NEW.activo));
+END $$
+
+CREATE TRIGGER trg_usuarios_delete
+AFTER DELETE ON usuarios
+FOR EACH ROW
+BEGIN
+  INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
+  VALUES (CURRENT_USER(), 'usuarios', 'DELETE', OLD.id,
+          JSON_OBJECT('ingresoUsuario', OLD.ingresoUsuario, 'tipo_de_usuario', OLD.tipo_de_usuario, 'activo', OLD.activo), NULL);
+END $$
+
+CREATE TRIGGER trg_alumnos_insert
+AFTER INSERT ON alumnos
+FOR EACH ROW
+BEGIN
+  INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
+  VALUES (CURRENT_USER(), 'alumnos', 'INSERT', NEW.id, NULL,
+          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera));
+END $$
+
+CREATE TRIGGER trg_alumnos_update
+AFTER UPDATE ON alumnos
+FOR EACH ROW
+BEGIN
+  INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
+  VALUES (CURRENT_USER(), 'alumnos', 'UPDATE', NEW.id,
+          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera),
+          JSON_OBJECT('nombres', NEW.nombres, 'apellidos', NEW.apellidos, 'promedio', NEW.promedio, 'carrera', NEW.carrera));
+END $$
+
+CREATE TRIGGER trg_alumnos_delete
+AFTER DELETE ON alumnos
+FOR EACH ROW
+BEGIN
+  INSERT INTO auditoria_cambios(usuario, tabla_afectada, accion, registro_id, valores_anteriores, valores_nuevos)
+  VALUES (CURRENT_USER(), 'alumnos', 'DELETE', OLD.id,
+          JSON_OBJECT('nombres', OLD.nombres, 'apellidos', OLD.apellidos, 'promedio', OLD.promedio, 'carrera', OLD.carrera), NULL);
+END $$
+
+DELIMITER ;
 
 -- =========================================
 -- 4) USUARIO ADMINISTRADOR POR DEFECTO

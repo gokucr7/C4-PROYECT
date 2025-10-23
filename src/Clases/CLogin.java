@@ -59,6 +59,7 @@ public class CLogin {
                     }
 
                     TipoUsuarioAdentro = roleCode;
+                    registrarUltimoAcceso(conn, username.trim());
                     abrirMenuPorRol(roleCode);
                 }
             }
@@ -123,6 +124,16 @@ public class CLogin {
             }
             case "ESTUDIANTE" -> JOptionPane.showMessageDialog(null, "El usuario ESTUDIANTE no tiene acceso a esta aplicación");
             default -> JOptionPane.showMessageDialog(null, "Tipo de usuario no reconocido");
+        }
+    }
+
+    private void registrarUltimoAcceso(Connection conn, String usuario) {
+        String update = "UPDATE usuarios SET ultimo_acceso = CURRENT_TIMESTAMP WHERE ingresoUsuario = ?";
+        try (PreparedStatement ps = conn.prepareStatement(update)) {
+            ps.setString(1, usuario);
+            ps.executeUpdate();
+        } catch (SQLException ex) {
+            System.err.println("No se pudo actualizar el último acceso: " + ex.getMessage());
         }
     }
 }

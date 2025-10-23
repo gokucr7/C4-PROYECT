@@ -3,12 +3,27 @@ package Formularios;
 
 import Clases.CAlumnos;
 import Clases.CLogin;
+import Clases.CatalogoRefresher;
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Desktop;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.HeadlessException;
+import java.awt.Insets;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.io.PrintWriter;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.swing.JOptionPane;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -16,6 +31,8 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 
 
 public class FormAlumno extends javax.swing.JFrame {
+
+    private final Runnable catalogoListener = this::refrescarProgramas;
 
     
 
@@ -25,14 +42,29 @@ public class FormAlumno extends javax.swing.JFrame {
         txtId.setEnabled(false);
         this.setLocationRelativeTo(null);
         CAlumnos objetoAlumnos = new CAlumnos();
+
+        inicializarFiltros();
+
         objetoAlumnos.cargarProgramas(cboCarrera);
+        objetoAlumnos.cargarProgramas(cboFiltroCarrera, true);
         objetoAlumnos.MostrarAlumnos(tbTotalAlumnos);
-        
-        
-        
+        aplicarFiltros();
+
+
+        CatalogoRefresher.registrar(catalogoListener);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                CatalogoRefresher.remover(catalogoListener);
+            }
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                CatalogoRefresher.remover(catalogoListener);
+            }
+        });
     }
 
-    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -385,6 +417,195 @@ public class FormAlumno extends javax.swing.JFrame {
         objetoAlumno.SeleccionarAlumno(tbTotalAlumnos, txtId, txtNombres, txtApellidos, spnPromedio, cboCarrera);
     }//GEN-LAST:event_tbTotalAlumnosMouseClicked
 
+    private void inicializarFiltros() {
+        lblBuscar = new javax.swing.JLabel("Buscar:");
+        lblBuscar.setForeground(Color.WHITE);
+        txtBuscar = new javax.swing.JTextField();
+        txtBuscar.setColumns(15);
+
+        lblFiltroCarrera = new javax.swing.JLabel("Carrera:");
+        lblFiltroCarrera.setForeground(Color.WHITE);
+        cboFiltroCarrera = new javax.swing.JComboBox<>();
+
+        lblMinPromedio = new javax.swing.JLabel("Promedio mín:");
+        lblMinPromedio.setForeground(Color.WHITE);
+        spnPromedioMin = new javax.swing.JSpinner(new javax.swing.SpinnerNumberModel(0.0d, 0.0d, 5.0d, 0.1d));
+
+        lblMaxPromedio = new javax.swing.JLabel("Promedio máx:");
+        lblMaxPromedio.setForeground(Color.WHITE);
+        spnPromedioMax = new javax.swing.JSpinner(new javax.swing.SpinnerNumberModel(5.0d, 0.0d, 5.0d, 0.1d));
+
+        btnAplicarFiltros = new javax.swing.JButton("Aplicar filtros");
+        btnLimpiarFiltros = new javax.swing.JButton("Limpiar");
+        btnExportarCsv = new javax.swing.JButton("Exportar CSV");
+
+        btnAplicarFiltros.addActionListener(evt -> aplicarFiltros());
+        btnLimpiarFiltros.addActionListener(evt -> limpiarFiltros());
+        btnExportarCsv.addActionListener(evt -> generarCSV());
+
+        txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                aplicarFiltros();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                aplicarFiltros();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                aplicarFiltros();
+            }
+        });
+
+        cboFiltroCarrera.addActionListener(evt -> aplicarFiltros());
+
+        ChangeListener changeListener = (ChangeEvent e) -> aplicarFiltros();
+        spnPromedioMin.addChangeListener(changeListener);
+        spnPromedioMax.addChangeListener(changeListener);
+
+        configurarPanelFiltros();
+        aplicarFiltros();
+    }
+
+    private void configurarPanelFiltros() {
+        jPanel2.removeAll();
+        jPanel2.setLayout(new BorderLayout(0, 10));
+
+        javax.swing.JPanel panelFiltros = new javax.swing.JPanel(new GridBagLayout());
+        panelFiltros.setBackground(jPanel2.getBackground());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panelFiltros.add(lblBuscar, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panelFiltros.add(txtBuscar, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panelFiltros.add(lblFiltroCarrera, gbc);
+
+        gbc.gridx = 3;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panelFiltros.add(cboFiltroCarrera, gbc);
+
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panelFiltros.add(lblMinPromedio, gbc);
+
+        gbc.gridx = 1;
+        panelFiltros.add(spnPromedioMin, gbc);
+
+        gbc.gridx = 2;
+        panelFiltros.add(lblMaxPromedio, gbc);
+
+        gbc.gridx = 3;
+        panelFiltros.add(spnPromedioMax, gbc);
+
+        gbc.gridx = 4;
+        panelFiltros.add(btnAplicarFiltros, gbc);
+
+        gbc.gridx = 5;
+        panelFiltros.add(btnLimpiarFiltros, gbc);
+
+        gbc.gridx = 6;
+        panelFiltros.add(btnExportarCsv, gbc);
+
+        jPanel2.add(panelFiltros, BorderLayout.NORTH);
+        jPanel2.add(jScrollPane2, BorderLayout.CENTER);
+        jPanel2.revalidate();
+        jPanel2.repaint();
+    }
+
+    private void aplicarFiltros() {
+        if (cboFiltroCarrera == null) {
+            return;
+        }
+        String termino = txtBuscar.getText();
+        String seleccion = (String) cboFiltroCarrera.getSelectedItem();
+        String codigoCarrera = obtenerCodigoPrograma(seleccion);
+
+        double min = ((Number) spnPromedioMin.getValue()).doubleValue();
+        double max = ((Number) spnPromedioMax.getValue()).doubleValue();
+
+        if (min > max) {
+            JOptionPane.showMessageDialog(this, "El promedio mínimo no puede ser mayor que el máximo");
+            return;
+        }
+
+        Double filtroMin = min > 0.0 ? min : null;
+        Double filtroMax = max < 5.0 ? max : null;
+
+        CAlumnos dao = new CAlumnos();
+        dao.filtrarAlumnos(tbTotalAlumnos, termino, codigoCarrera, filtroMin, filtroMax);
+    }
+
+    private void limpiarFiltros() {
+        txtBuscar.setText("");
+        if (cboFiltroCarrera.getItemCount() > 0) {
+            cboFiltroCarrera.setSelectedIndex(0);
+        }
+        spnPromedioMin.setValue(0.0d);
+        spnPromedioMax.setValue(5.0d);
+        aplicarFiltros();
+    }
+
+    private void refrescarProgramas() {
+        Object seleccionEdicion = cboCarrera.getSelectedItem();
+        Object seleccionFiltro = cboFiltroCarrera != null ? cboFiltroCarrera.getSelectedItem() : null;
+        CAlumnos dao = new CAlumnos();
+        dao.cargarProgramas(cboCarrera);
+        dao.cargarProgramas(cboFiltroCarrera, true);
+        seleccionarEnCombo(cboCarrera, seleccionEdicion != null ? seleccionEdicion.toString() : null);
+        seleccionarEnCombo(cboFiltroCarrera, seleccionFiltro != null ? seleccionFiltro.toString() : null);
+        aplicarFiltros();
+    }
+
+    private void seleccionarEnCombo(javax.swing.JComboBox<String> combo, String valor) {
+        if (combo == null || valor == null) {
+            return;
+        }
+        for (int i = 0; i < combo.getItemCount(); i++) {
+            String item = combo.getItemAt(i);
+            if (valor.equals(item)) {
+                combo.setSelectedIndex(i);
+                return;
+            }
+            if (item != null && valor.contains("-")) {
+                String codigo = valor.split("-")[0].trim();
+                if (item.startsWith(codigo + " ")) {
+                    combo.setSelectedIndex(i);
+                    return;
+                }
+            }
+        }
+    }
+
+    private String obtenerCodigoPrograma(String valor) {
+        if (valor == null || valor.isBlank() || "Todos".equalsIgnoreCase(valor)) {
+            return null;
+        }
+        int indice = valor.indexOf('-');
+        if (indice == -1) {
+            return valor.trim();
+        }
+        return valor.substring(0, indice).trim();
+    }
+
     public static void main(String args[]) {
         
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -416,8 +637,51 @@ public class FormAlumno extends javax.swing.JFrame {
     private javax.swing.JTextField txtApellidos;
     private javax.swing.JTextField txtId;
     private javax.swing.JTextField txtNombres;
+    private javax.swing.JButton btnAplicarFiltros;
+    private javax.swing.JButton btnLimpiarFiltros;
+    private javax.swing.JButton btnExportarCsv;
+    private javax.swing.JComboBox<String> cboFiltroCarrera;
+    private javax.swing.JLabel lblBuscar;
+    private javax.swing.JLabel lblFiltroCarrera;
+    private javax.swing.JLabel lblMinPromedio;
+    private javax.swing.JLabel lblMaxPromedio;
+    private javax.swing.JSpinner spnPromedioMin;
+    private javax.swing.JSpinner spnPromedioMax;
+    private javax.swing.JTextField txtBuscar;
     // End of variables declaration//GEN-END:variables
-    
+
+    private void generarCSV() {
+        File archivo = new File("InformeAlumnos.csv");
+        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(archivo)))) {
+            int columnas = tbTotalAlumnos.getColumnCount();
+            int filas = tbTotalAlumnos.getRowCount();
+
+            for (int c = 0; c < columnas; c++) {
+                writer.print(tbTotalAlumnos.getColumnName(c));
+                writer.print(c == columnas - 1 ? "" : ",");
+            }
+            writer.println();
+
+            for (int f = 0; f < filas; f++) {
+                for (int c = 0; c < columnas; c++) {
+                    Object valor = tbTotalAlumnos.getValueAt(f, c);
+                    writer.print(valor != null ? valor.toString() : "");
+                    writer.print(c == columnas - 1 ? "" : ",");
+                }
+                writer.println();
+            }
+
+            writer.flush();
+
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                Desktop.getDesktop().open(archivo);
+            }
+            JOptionPane.showMessageDialog(this, "Archivo CSV generado correctamente");
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Error al generar el CSV: " + ex.getMessage());
+        }
+    }
+
    private void generarInformeExcel() {
     try {
         // Crea un nuevo libro de Excel

@@ -73,28 +73,11 @@ public class CAlumnos {
     }
 
     public void cargarProgramas(JComboBox<String> combo) {
-        DefaultComboBoxModel<String> modelo = new DefaultComboBoxModel<>();
-        String sql = "SELECT codigo, nombre FROM programa ORDER BY nombre";
-        try (Connection conn = Cconexion.estableceConexion();
-             PreparedStatement ps = conn != null ? conn.prepareStatement(sql) : null;
-             ResultSet rs = ps != null ? ps.executeQuery() : null) {
-            if (rs != null) {
-                while (rs.next()) {
-                    String codigo = rs.getString("codigo");
-                    String nombre = rs.getString("nombre");
-                    modelo.addElement(codigo + " - " + nombre);
-                }
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error al cargar programas: " + e.getMessage());
-        }
-        if (modelo.getSize() == 0) {
-            modelo.addElement("SIS - Ingeniería de Sistemas");
-        }
-        combo.setModel(modelo);
-        if (modelo.getSize() > 0) {
-            combo.setSelectedIndex(0);
-        }
+        cargarProgramas(combo, false);
+    }
+
+    public void cargarProgramas(JComboBox<String> combo, boolean incluirTodos) {
+        new CProgramas().llenarComboProgramas(combo, incluirTodos);
     }
 
     public void InsertarAlumno(JTextField paramNombres, JTextField paramApellidos, JSpinner paramPromedio, JComboBox<String> paramCarrera) {
@@ -126,48 +109,72 @@ public class CAlumnos {
 
 
     public void MostrarAlumnos (JTable paramTablaTotalAlumnos) {
-    DefaultTableModel modelo = new DefaultTableModel();
-    TableRowSorter<TableModel> OrdenarTabla = new TableRowSorter<>(modelo);
-
-    paramTablaTotalAlumnos.setRowSorter(OrdenarTabla);
-
-    // Defino las columnas de la tabla
-    modelo.addColumn("Id");
-    modelo.addColumn("Nombres");
-    modelo.addColumn("Apellidos");
-    modelo.addColumn("Promedio");
-    modelo.addColumn("Carrera");
-
-    paramTablaTotalAlumnos.setModel(modelo);
-
-    String sql = "SELECT a.id, a.nombres, a.apellidos, a.promedio, CONCAT(a.carrera, ' - ', COALESCE(p.nombre, '')) AS programa FROM alumnos a LEFT JOIN programa p ON a.carrera = p.codigo";
-    String[] datos = new String[5];
-
-    Statement st;
-    try {
-        st = Cconexion.estableceConexion().createStatement();
-        ResultSet rs = st.executeQuery(sql);
-
-        while (rs.next()) {
-            datos[0] = rs.getString(1);
-            datos[1] = rs.getString(2);
-            datos[2] = rs.getString(3);
-            datos[3] = rs.getString(4);
-            datos[4] = rs.getString(5);
-
-            modelo.addRow(datos);
-        }
-
-        paramTablaTotalAlumnos.setModel(modelo);
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(null, "No se pudo mostrar los registros, error: " + e.toString());
+        filtrarAlumnos(paramTablaTotalAlumnos, null, null, null, null);
     }
 
+    public void filtrarAlumnos(JTable tabla, String terminoBusqueda, String codigoCarrera,
+            Double minimoPromedio, Double maximoPromedio) {
+        DefaultTableModel modelo = crearModeloTablaAlumnos();
+        tabla.setModel(modelo);
+        TableRowSorter<TableModel> ordenarTabla = new TableRowSorter<>(modelo);
+        tabla.setRowSorter(ordenarTabla);
 
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT a.id, a.nombres, a.apellidos, a.promedio, CONCAT(a.carrera, ' - ', COALESCE(p.nombre, '')) AS programa ");
+        sql.append("FROM alumnos a LEFT JOIN programa p ON a.carrera = p.codigo WHERE 1=1");
 
+        List<Object> parametros = new ArrayList<>();
 
-}
+        if (terminoBusqueda != null && !terminoBusqueda.isBlank()) {
+            sql.append(" AND (LOWER(a.nombres) LIKE ? OR LOWER(a.apellidos) LIKE ?)");
+            String valor = "%" + terminoBusqueda.toLowerCase() + "%";
+            parametros.add(valor);
+            parametros.add(valor);
+        }
+
+        if (codigoCarrera != null && !codigoCarrera.isBlank() && !"Todos".equalsIgnoreCase(codigoCarrera)) {
+            sql.append(" AND a.carrera = ?");
+            parametros.add(codigoCarrera);
+        }
+
+        if (minimoPromedio != null) {
+            sql.append(" AND a.promedio >= ?");
+            parametros.add(minimoPromedio);
+        }
+
+        if (maximoPromedio != null) {
+            sql.append(" AND a.promedio <= ?");
+            parametros.add(maximoPromedio);
+        }
+
+        sql.append(" ORDER BY a.id DESC");
+
+        try (Connection conn = Cconexion.estableceConexion();
+             PreparedStatement ps = conn != null ? conn.prepareStatement(sql.toString()) : null) {
+            if (ps == null) {
+                JOptionPane.showMessageDialog(null, "No se pudo establecer conexión con la base de datos");
+                return;
+            }
+
+            for (int i = 0; i < parametros.size(); i++) {
+                ps.setObject(i + 1, parametros.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Object[] fila = new Object[5];
+                    fila[0] = rs.getLong(1);
+                    fila[1] = rs.getString(2);
+                    fila[2] = rs.getString(3);
+                    fila[3] = rs.getDouble(4);
+                    fila[4] = rs.getString(5);
+                    modelo.addRow(fila);
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Error al filtrar alumnos: " + ex.getMessage());
+        }
+    }
 
     private DefaultTableModel crearModeloTablaAlumnos() {
         DefaultTableModel modelo = new DefaultTableModel();
