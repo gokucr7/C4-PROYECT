@@ -1,5 +1,6 @@
 package Formularios;
 
+import Clases.AlumnoEstadisticas;
 import Clases.CAlumnos;
 import Clases.CLogin;
 import java.awt.BorderLayout;
@@ -170,17 +171,17 @@ public class FormEstadistica extends javax.swing.JFrame {
             return;
         }
 
-        double media = CAlumnos.calcularMedia(datos);
-        double moda = CAlumnos.calcularModa(datos);
-        double mediana = CAlumnos.calcularMediana(datos);
-        double cuartil1 = CAlumnos.calcularCuartil1(datos);
-        double cuartil3 = CAlumnos.calcularCuartil3(datos);
-        double desviacionMedia = CAlumnos.calcularDesviacionMedia(datos);
-        double varianza = CAlumnos.calcularVarianza(datos);
-        double desviacionTipica = CAlumnos.calcularDesviacionTipica(datos);
-        double coeficienteVariacion = CAlumnos.calcularCoeficienteVariacion(datos);
-        double asimetria = CAlumnos.calcularAsimetria(datos);
-        double curtosis = CAlumnos.calcularCurtosis(datos);
+        double media = AlumnoEstadisticas.calcularMedia(datos);
+        double moda = AlumnoEstadisticas.calcularModa(datos);
+        double mediana = AlumnoEstadisticas.calcularMediana(datos);
+        double cuartil1 = AlumnoEstadisticas.calcularCuartil1(datos);
+        double cuartil3 = AlumnoEstadisticas.calcularCuartil3(datos);
+        double desviacionMedia = AlumnoEstadisticas.calcularDesviacionMedia(datos);
+        double varianza = AlumnoEstadisticas.calcularVarianza(datos);
+        double desviacionTipica = AlumnoEstadisticas.calcularDesviacionTipica(datos);
+        double coeficienteVariacion = AlumnoEstadisticas.calcularCoeficienteVariacion(datos);
+        double asimetria = AlumnoEstadisticas.calcularAsimetria(datos);
+        double curtosis = AlumnoEstadisticas.calcularCurtosis(datos);
 
         StringBuilder resultados = new StringBuilder();
         resultados.append("Número de datos: ").append(datos.size()).append('\n');
