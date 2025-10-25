@@ -3,12 +3,17 @@ package Formularios;
 import Clases.AlumnoEstadisticas;
 import Clases.CAlumnos;
 import Clases.CLogin;
+import Clases.Cconexion;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.util.Arrays;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -30,6 +35,8 @@ import org.jfree.data.statistics.HistogramDataset;
 public class FormEstadistica extends javax.swing.JFrame {
     private static final Color COLOR_FONDO = new Color(112, 145, 255);
     private static final Font FUENTE_BOTON = new Font("Lucida Sans", Font.BOLD, 14);
+    private static final String SQL_SELECT_PROGRAMAS =
+            "SELECT codigo, nombre FROM programa ORDER BY nombre";
 
     private final CAlumnos alumnos = new CAlumnos();
 
@@ -78,22 +85,50 @@ public class FormEstadistica extends javax.swing.JFrame {
 
     private void configurarTabsCarreras() {
         jTabbedPane1.removeAll();
-        List<CarreraInfo> carreras = Arrays.asList(
-            new CarreraInfo("SIS", "Ingeniería de Sistemas"),
-            new CarreraInfo("ELE", "Ingeniería Electrónica"),
-            new CarreraInfo("ADM", "Administración de Empresas"),
-            new CarreraInfo("AGR", "Agronomía"),
-            new CarreraInfo("ZOO", "Zootecnia"),
-            new CarreraInfo("CON", "Contaduría Pública"),
-            new CarreraInfo("SOC", "Licenciatura en Sociales"),
-            new CarreraInfo("IND", "Ingeniería Industrial"),
-            new CarreraInfo("MEC", "Ingeniería Mecatrónica")
-        );
+        List<CarreraInfo> carreras = obtenerCarrerasDesdeBD();
+
+        if (carreras.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "No hay programas registrados para mostrar estadísticas.",
+                    "Información",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
 
         for (CarreraInfo info : carreras) {
             JPanel tab = crearTabCarrera(info);
             jTabbedPane1.addTab(info.nombre, tab);
         }
+    }
+
+    private List<CarreraInfo> obtenerCarrerasDesdeBD() {
+        List<CarreraInfo> carreras = new ArrayList<>();
+
+        try (Connection conn = Cconexion.estableceConexion()) {
+            if (conn == null) {
+                JOptionPane.showMessageDialog(this,
+                        "No se pudo establecer conexión con la base de datos.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return carreras;
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(SQL_SELECT_PROGRAMAS);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    carreras.add(new CarreraInfo(
+                            rs.getString("codigo"),
+                            rs.getString("nombre")));
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar programas: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+
+        return carreras;
     }
 
     private JPanel crearTabCarrera(CarreraInfo info) {
