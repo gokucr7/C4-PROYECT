@@ -21,6 +21,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -640,6 +641,8 @@ public class FormAlumno extends javax.swing.JFrame {
     private javax.swing.JTextField txtBuscar;
     // End of variables declaration//GEN-END:variables
 
+    private static final Charset PDF_TEXT_CHARSET = Charset.forName("windows-1252");
+
     private void generarInformePdf() {
         List<String> lineas = new ArrayList<>();
         int columnas = tbTotalAlumnos.getColumnCount();
@@ -678,7 +681,7 @@ public class FormAlumno extends javax.swing.JFrame {
         }
         contenidoTexto.append("ET\n");
 
-        byte[] contenidoBytes = contenidoTexto.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] contenidoBytes = contenidoTexto.toString().getBytes(PDF_TEXT_CHARSET);
         File archivoPdf = new File("InformeAlumnos.pdf");
 
         try (ByteArrayOutputStream memoria = new ByteArrayOutputStream();
