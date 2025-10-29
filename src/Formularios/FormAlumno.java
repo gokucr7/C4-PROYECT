@@ -23,8 +23,11 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 
 public class FormAlumno extends javax.swing.JFrame {
@@ -642,41 +645,51 @@ public class FormAlumno extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private static final Charset PDF_TEXT_CHARSET = Charset.forName("windows-1252");
+    private static final Locale PDF_LOCALE = new Locale("es", "CO");
 
     private void generarInformePdf() {
         List<String> lineas = new ArrayList<>();
-        int columnas = tbTotalAlumnos.getColumnCount();
-        if (columnas == 0) {
+        if (tbTotalAlumnos.getColumnCount() == 0) {
             JOptionPane.showMessageDialog(this, "No hay datos para generar el informe.");
             return;
         }
 
-        StringBuilder encabezado = new StringBuilder();
-        for (int c = 0; c < columnas; c++) {
-            encabezado.append(tbTotalAlumnos.getColumnName(c));
-            if (c < columnas - 1) {
-                encabezado.append(" | ");
-            }
-        }
-        lineas.add(encabezado.toString());
+        DecimalFormatSymbols simbolosColombia = new DecimalFormatSymbols(PDF_LOCALE);
+        DecimalFormat formatoPromedio = new DecimalFormat("#,##0.0#", simbolosColombia);
+
+        lineas.add("Informe de estudiantes registrados");
+        lineas.add(String.format(PDF_LOCALE, "Total de estudiantes listados: %d.", tbTotalAlumnos.getRowCount()));
+        lineas.add("");
 
         for (int f = 0; f < tbTotalAlumnos.getRowCount(); f++) {
-            StringBuilder fila = new StringBuilder();
-            for (int c = 0; c < columnas; c++) {
-                Object valor = tbTotalAlumnos.getValueAt(f, c);
-                fila.append(valor != null ? valor.toString() : "");
-                if (c < columnas - 1) {
-                    fila.append(" | ");
-                }
-            }
-            lineas.add(fila.toString());
+            String codigo = obtenerTextoCelda(f, 0);
+            String nombres = sanearTextoParaPdf(obtenerTextoCelda(f, 1));
+            String apellidos = sanearTextoParaPdf(obtenerTextoCelda(f, 2));
+
+            Object valorPromedio = tbTotalAlumnos.getValueAt(f, 3);
+            double promedioNumerico = valorPromedio instanceof Number
+                    ? ((Number) valorPromedio).doubleValue()
+                    : parsearPromedio(valorPromedio);
+            String promedioTexto = formatoPromedio.format(promedioNumerico);
+
+            String carrera = sanearTextoParaPdf(obtenerTextoCelda(f, 4));
+            String descripcion = String.format(
+                    PDF_LOCALE,
+                    "Estudiante %s %s (código %s) cursa %s y tiene un promedio acumulado de %s.",
+                    nombres,
+                    apellidos,
+                    codigo,
+                    carrera,
+                    promedioTexto
+            );
+            lineas.add(descripcion.trim());
         }
 
         StringBuilder contenidoTexto = new StringBuilder();
         contenidoTexto.append("BT\n/F1 12 Tf\n72 750 Td\n");
         for (String linea : lineas) {
             contenidoTexto.append('(')
-                    .append(escapePdfText(linea))
+                    .append(escapePdfText(sanearTextoParaPdf(linea)))
                     .append(") Tj\n0 -16 Td\n");
         }
         contenidoTexto.append("ET\n");
@@ -707,7 +720,7 @@ public class FormAlumno extends javax.swing.JFrame {
             memoria.write("endstream\nendobj\n".getBytes(StandardCharsets.US_ASCII));
 
             offsets.add(memoria.size());
-            memoria.write("5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n".getBytes(StandardCharsets.US_ASCII));
+            memoria.write("5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> endobj\n".getBytes(StandardCharsets.US_ASCII));
 
             long inicioXref = memoria.size();
             memoria.write(("xref\n0 " + offsets.size() + "\n").getBytes(StandardCharsets.US_ASCII));
@@ -738,5 +751,119 @@ public class FormAlumno extends javax.swing.JFrame {
             return "";
         }
         return texto.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)");
+    }
+
+    private String sanearTextoParaPdf(String texto) {
+        if (texto == null) {
+            return "";
+        }
+
+        String limpio = texto.trim();
+        if (limpio.isEmpty()) {
+            return limpio;
+        }
+
+        String reparado = intentarRecuperarCodificacion(limpio);
+        if (contieneCaracteresSospechosos(reparado)) {
+            reparado = reemplazarCaracteresConfusos(reparado);
+        }
+        return reparado;
+    }
+
+    private String intentarRecuperarCodificacion(String texto) {
+        if (!contieneCaracteresSospechosos(texto)) {
+            return texto;
+        }
+
+        List<String> candidatos = new ArrayList<>();
+        candidatos.add(texto);
+        candidatos.add(recodificar(texto, StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8));
+        candidatos.add(recodificar(texto, PDF_TEXT_CHARSET, StandardCharsets.UTF_8));
+        candidatos.add(recodificar(texto, StandardCharsets.UTF_8, StandardCharsets.ISO_8859_1));
+        candidatos.add(recodificar(texto, StandardCharsets.UTF_8, PDF_TEXT_CHARSET));
+
+        for (String candidato : candidatos) {
+            if (!contieneCaracteresSospechosos(candidato)) {
+                return candidato;
+            }
+        }
+        return texto;
+    }
+
+    private String recodificar(String texto, Charset origen, Charset destino) {
+        try {
+            byte[] bytes = texto.getBytes(origen);
+            return new String(bytes, destino);
+        } catch (Exception ex) {
+            return texto;
+        }
+    }
+
+    private boolean contieneCaracteresSospechosos(String texto) {
+        if (texto == null) {
+            return false;
+        }
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+            if (c == '\uFFFD' || c == 'Ã' || c == 'Â' || c == 'æ' || c == 'Æ'
+                    || c == 'Ø' || c == 'ø' || c == 'œ' || c == 'Œ' || c == 'ð' || c == 'Ð') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String reemplazarCaracteresConfusos(String texto) {
+        StringBuilder resultado = new StringBuilder(texto.length());
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+            switch (c) {
+                case 'æ':
+                    resultado.append('ñ');
+                    break;
+                case 'Æ':
+                    resultado.append('Ñ');
+                    break;
+                case 'Ø':
+                    resultado.append('É');
+                    break;
+                case 'ø':
+                    resultado.append('é');
+                    break;
+                case 'œ':
+                    resultado.append('ú');
+                    break;
+                case 'Œ':
+                    resultado.append('Ú');
+                    break;
+                case 'ð':
+                    resultado.append('ó');
+                    break;
+                case 'Ð':
+                    resultado.append('Ó');
+                    break;
+                default:
+                    resultado.append(c);
+                    break;
+            }
+        }
+        return resultado.toString();
+    }
+
+    private String obtenerTextoCelda(int fila, int columna) {
+        Object valor = tbTotalAlumnos.getValueAt(fila, columna);
+        return valor != null ? valor.toString() : "";
+    }
+
+    private double parsearPromedio(Object valorPromedio) {
+        if (valorPromedio == null) {
+            return 0d;
+        }
+        try {
+            String texto = valorPromedio.toString().replace(',', '.');
+            return Double.parseDouble(texto);
+        } catch (NumberFormatException ex) {
+            return 0d;
+        }
     }
 }
