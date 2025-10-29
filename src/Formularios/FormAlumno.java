@@ -9,14 +9,11 @@ import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.HeadlessException;
 import java.awt.Insets;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.FileWriter;
-import java.io.BufferedWriter;
-import java.io.PrintWriter;
+import java.io.ByteArrayOutputStream;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JOptionPane;
@@ -24,10 +21,9 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFRow;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class FormAlumno extends javax.swing.JFrame {
@@ -409,7 +405,7 @@ public class FormAlumno extends javax.swing.JFrame {
     }//GEN-LAST:event_jButtonInicioActionPerformed
 
     private void btnInformeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInformeActionPerformed
-        generarInformeExcel();
+        generarInformePdf();
     }//GEN-LAST:event_btnInformeActionPerformed
 
     private void tbTotalAlumnosMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tbTotalAlumnosMouseClicked
@@ -437,11 +433,9 @@ public class FormAlumno extends javax.swing.JFrame {
 
         btnAplicarFiltros = new javax.swing.JButton("Aplicar filtros");
         btnLimpiarFiltros = new javax.swing.JButton("Limpiar");
-        btnExportarCsv = new javax.swing.JButton("Exportar CSV");
 
         btnAplicarFiltros.addActionListener(evt -> aplicarFiltros());
         btnLimpiarFiltros.addActionListener(evt -> limpiarFiltros());
-        btnExportarCsv.addActionListener(evt -> generarCSV());
 
         txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -521,9 +515,6 @@ public class FormAlumno extends javax.swing.JFrame {
 
         gbc.gridx = 5;
         panelFiltros.add(btnLimpiarFiltros, gbc);
-
-        gbc.gridx = 6;
-        panelFiltros.add(btnExportarCsv, gbc);
 
         jPanel2.add(panelFiltros, BorderLayout.NORTH);
         jPanel2.add(jScrollPane2, BorderLayout.CENTER);
@@ -639,7 +630,6 @@ public class FormAlumno extends javax.swing.JFrame {
     private javax.swing.JTextField txtNombres;
     private javax.swing.JButton btnAplicarFiltros;
     private javax.swing.JButton btnLimpiarFiltros;
-    private javax.swing.JButton btnExportarCsv;
     private javax.swing.JComboBox<String> cboFiltroCarrera;
     private javax.swing.JLabel lblBuscar;
     private javax.swing.JLabel lblFiltroCarrera;
@@ -650,92 +640,100 @@ public class FormAlumno extends javax.swing.JFrame {
     private javax.swing.JTextField txtBuscar;
     // End of variables declaration//GEN-END:variables
 
-    private void generarCSV() {
-        File archivo = new File("InformeAlumnos.csv");
-        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(archivo)))) {
-            int columnas = tbTotalAlumnos.getColumnCount();
-            int filas = tbTotalAlumnos.getRowCount();
+    private void generarInformePdf() {
+        List<String> lineas = new ArrayList<>();
+        int columnas = tbTotalAlumnos.getColumnCount();
+        if (columnas == 0) {
+            JOptionPane.showMessageDialog(this, "No hay datos para generar el informe.");
+            return;
+        }
 
+        StringBuilder encabezado = new StringBuilder();
+        for (int c = 0; c < columnas; c++) {
+            encabezado.append(tbTotalAlumnos.getColumnName(c));
+            if (c < columnas - 1) {
+                encabezado.append(" | ");
+            }
+        }
+        lineas.add(encabezado.toString());
+
+        for (int f = 0; f < tbTotalAlumnos.getRowCount(); f++) {
+            StringBuilder fila = new StringBuilder();
             for (int c = 0; c < columnas; c++) {
-                writer.print(tbTotalAlumnos.getColumnName(c));
-                writer.print(c == columnas - 1 ? "" : ",");
-            }
-            writer.println();
-
-            for (int f = 0; f < filas; f++) {
-                for (int c = 0; c < columnas; c++) {
-                    Object valor = tbTotalAlumnos.getValueAt(f, c);
-                    writer.print(valor != null ? valor.toString() : "");
-                    writer.print(c == columnas - 1 ? "" : ",");
+                Object valor = tbTotalAlumnos.getValueAt(f, c);
+                fila.append(valor != null ? valor.toString() : "");
+                if (c < columnas - 1) {
+                    fila.append(" | ");
                 }
-                writer.println();
             }
+            lineas.add(fila.toString());
+        }
 
-            writer.flush();
+        StringBuilder contenidoTexto = new StringBuilder();
+        contenidoTexto.append("BT\n/F1 12 Tf\n72 750 Td\n");
+        for (String linea : lineas) {
+            contenidoTexto.append('(')
+                    .append(escapePdfText(linea))
+                    .append(") Tj\n0 -16 Td\n");
+        }
+        contenidoTexto.append("ET\n");
+
+        byte[] contenidoBytes = contenidoTexto.toString().getBytes(StandardCharsets.UTF_8);
+        File archivoPdf = new File("InformeAlumnos.pdf");
+
+        try (ByteArrayOutputStream memoria = new ByteArrayOutputStream();
+             FileOutputStream archivo = new FileOutputStream(archivoPdf)) {
+
+            memoria.write("%PDF-1.4\n".getBytes(StandardCharsets.US_ASCII));
+
+            List<Integer> offsets = new ArrayList<>();
+            offsets.add(0);
+
+            offsets.add(memoria.size());
+            memoria.write("1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n".getBytes(StandardCharsets.US_ASCII));
+
+            offsets.add(memoria.size());
+            memoria.write("2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n".getBytes(StandardCharsets.US_ASCII));
+
+            offsets.add(memoria.size());
+            memoria.write("3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj\n".getBytes(StandardCharsets.US_ASCII));
+
+            offsets.add(memoria.size());
+            memoria.write(("4 0 obj << /Length " + contenidoBytes.length + " >> stream\n").getBytes(StandardCharsets.US_ASCII));
+            memoria.write(contenidoBytes);
+            memoria.write("endstream\nendobj\n".getBytes(StandardCharsets.US_ASCII));
+
+            offsets.add(memoria.size());
+            memoria.write("5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n".getBytes(StandardCharsets.US_ASCII));
+
+            long inicioXref = memoria.size();
+            memoria.write(("xref\n0 " + offsets.size() + "\n").getBytes(StandardCharsets.US_ASCII));
+            memoria.write("0000000000 65535 f \n".getBytes(StandardCharsets.US_ASCII));
+            for (int i = 1; i < offsets.size(); i++) {
+                memoria.write(String.format(java.util.Locale.US, "%010d 00000 n \n", offsets.get(i)).getBytes(StandardCharsets.US_ASCII));
+            }
+            memoria.write(("trailer << /Size " + offsets.size() + " /Root 1 0 R >>\n").getBytes(StandardCharsets.US_ASCII));
+            memoria.write(("startxref\n" + inicioXref + "\n").getBytes(StandardCharsets.US_ASCII));
+            memoria.write("%%EOF\n".getBytes(StandardCharsets.US_ASCII));
+
+            memoria.writeTo(archivo);
+            archivo.flush();
 
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                Desktop.getDesktop().open(archivo);
+                Desktop.getDesktop().open(archivoPdf);
+            } else {
+                JOptionPane.showMessageDialog(this, "Informe PDF generado con éxito, pero no se pudo abrir automáticamente.");
             }
-            JOptionPane.showMessageDialog(this, "Archivo CSV generado correctamente");
+            JOptionPane.showMessageDialog(this, "Informe PDF generado con éxito.");
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Error al generar el CSV: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error al generar el informe PDF: " + ex.getMessage());
         }
     }
 
-   private void generarInformeExcel() {
-    try {
-        // Crea un nuevo libro de Excel
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        
-        // Crea una hoja en el libro
-        XSSFSheet sheet = workbook.createSheet("Informe Alumnos");
-        
-        // Define las cabeceras de las columnas
-        String[] headers = {"Id","Nombres", "Apellidos", "Promedio", "Carrera"};
-        
-        // Crea la primera fila con las cabeceras
-        XSSFRow headerRow = sheet.createRow(0);
-        
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(headers[i]);
+    private String escapePdfText(String texto) {
+        if (texto == null) {
+            return "";
         }
-        
-        // Obtiene los datos de la tabla y los agrega al archivo de Excel
-        int rowCount = 1; // Comenzamos desde la segunda fila
-        
-        for (int row = 0; row < tbTotalAlumnos.getRowCount(); row++) {
-            XSSFRow excelRow = sheet.createRow(rowCount);
-            
-            for (int col = 0; col < tbTotalAlumnos.getColumnCount(); col++) {
-                Object value = tbTotalAlumnos.getValueAt(row, col);
-                Cell cell = excelRow.createCell(col);
-                
-                // Convierte el valor a String antes de agregarlo al archivo de Excel
-                cell.setCellValue(value.toString());
-            }
-            
-            rowCount++;
-        }
-        
-        // Guarda el archivo en disco
-        String informeFilePath = "InformeAlumnos.xlsx";
-        try (FileOutputStream fileOut = new FileOutputStream(informeFilePath)) {
-            workbook.write(fileOut);
-        }
-        
-        // Abre el archivo con la aplicación predeterminada para archivos Excel
-        File informeFile = new File(informeFilePath);
-        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-            Desktop.getDesktop().open(informeFile);
-        } else {
-            JOptionPane.showMessageDialog(null, "Informe generado con éxito, pero no se pudo abrir automáticamente.");
-        }
-        
-        JOptionPane.showMessageDialog(null, "Informe generado y abierto con éxito.");
-        
-    } catch (HeadlessException | IOException e) {
-        JOptionPane.showMessageDialog(null, "Error al generar el informe: " + e.getMessage());
+        return texto.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)");
     }
-}
 }
