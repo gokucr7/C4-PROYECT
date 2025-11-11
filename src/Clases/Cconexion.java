@@ -12,7 +12,7 @@ public class Cconexion {
 
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/login";
     private static final String DEFAULT_USER = "root";
-    private static final String DEFAULT_PASSWORD = "";
+    private static final String DEFAULT_PASSWORD = "1234";
 
     private static final String URL = valueFromEnv("DB_URL", DEFAULT_URL);
     private static final String USER = valueFromEnv("DB_USER", DEFAULT_USER);
@@ -23,7 +23,7 @@ public class Cconexion {
     private static final String SELECT_EXISTE_USUARIO =
             "SELECT 1 FROM usuarios WHERE ingresoUsuario = ?";
 
-    private Cconexion() {
+    public Cconexion() {
     }
 
     public static Connection estableceConexion() {
