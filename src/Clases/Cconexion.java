@@ -1,99 +1,95 @@
-
 package Clases;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.PreparedStatement;
-import javax.swing.JOptionPane;
 import java.sql.ResultSet;
-
-
+import java.sql.SQLException;
+import java.util.Objects;
+import javax.swing.JOptionPane;
 
 public class Cconexion {
-    //atributos
-    private static final String URL = "jdbc:mysql://localhost:3306/login";
-                                       //jdbc:mysql://viaduct.proxy.rlwy.net:29444/railway          
-                                       //jdbc:mysql://localhost:3306/login
-    private static final String USER = "root";
-    private static final String PASSWORD = "1234";
-                                            //153d2A1Gd3f-h5EHF6ha-FheaegA3gD3
-                                            //12345678
-    //metodo
-    public static Connection estableceConexion() {
-        Connection con = null;
-        try {
-            con = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (Exception e) {
-            System.err.println("Error al establecer la conexión: " + e.getMessage());
-        }
-        return con;
+
+    private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/login";
+    private static final String DEFAULT_USER = "root";
+    private static final String DEFAULT_PASSWORD = "";
+
+    private static final String URL = valueFromEnv("DB_URL", DEFAULT_URL);
+    private static final String USER = valueFromEnv("DB_USER", DEFAULT_USER);
+    private static final String PASSWORD = valueFromEnv("DB_PASSWORD", DEFAULT_PASSWORD);
+
+    private static final String INSERT_USUARIO =
+            "INSERT INTO usuarios (ingresoUsuario, ingresoContrasenia, tipo_de_usuario) VALUES (?, ?, ?)";
+    private static final String SELECT_EXISTE_USUARIO =
+            "SELECT 1 FROM usuarios WHERE ingresoUsuario = ?";
+
+    private Cconexion() {
     }
-    
+
+    public static Connection estableceConexion() {
+        try {
+            return DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (SQLException e) {
+            System.err.println("Error al establecer la conexión: " + e.getMessage());
+            return null;
+        }
+    }
+
     public void guardarUsuario(String user, String password) {
-    Connection conexion = estableceConexion();
-    if (conexion != null) {
-        // mira si el usuario ya existe
-        if (usuarioExiste(user, conexion)) {
-            JOptionPane.showMessageDialog(null, "El nombre de usuario ya está registrado");
-            return;
-        }
+        Objects.requireNonNull(user, "user");
+        Objects.requireNonNull(password, "password");
 
-        // Valida la contraseña (8 caracteres y contenta un simbolo  especial)
-        if (!validarContrasenia(password)) {
-            JOptionPane.showMessageDialog(null, "La contraseña no es suficientemente segura.\nDebe tener al menos 8 caracteres y contener un símbolo especial.");
-            return;
-        }
+        try (Connection conexion = estableceConexion()) {
+            if (conexion == null) {
+                JOptionPane.showMessageDialog(null, "Error al establecer la conexión");
+                return;
+            }
 
-        String sql = "INSERT INTO usuarios (ingresoUsuario, ingresoContrasenia, tipo_de_usuario) VALUES (?, ?, ?)";
-        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
-            pstmt.setString(1, user);
-            String hashed = BCrypt.hashpw(password, BCrypt.gensalt());
-            pstmt.setString(2, hashed);
-            pstmt.setString(3, "DOCENTE");
+            if (usuarioExiste(user, conexion)) {
+                JOptionPane.showMessageDialog(null, "El nombre de usuario ya está registrado");
+                return;
+            }
 
-            int resultado = pstmt.executeUpdate();
-            if (resultado > 0) {
-                JOptionPane.showMessageDialog(null, "Usuario registrado como 'DOCENTE' correctamente");
-            } else {
-                JOptionPane.showMessageDialog(null, "Error al registrar el usuario");
+            if (!validarContrasenia(password)) {
+                JOptionPane.showMessageDialog(null,
+                        "La contraseña no es suficientemente segura.\n"
+                                + "Debe tener al menos 8 caracteres y contener un símbolo especial.");
+                return;
+            }
+
+            try (PreparedStatement pstmt = conexion.prepareStatement(INSERT_USUARIO)) {
+                pstmt.setString(1, user.trim());
+                pstmt.setString(2, BCrypt.hashpw(password, BCrypt.gensalt()));
+                pstmt.setString(3, "DOCENTE");
+
+                int resultado = pstmt.executeUpdate();
+                if (resultado > 0) {
+                    JOptionPane.showMessageDialog(null, "Usuario registrado como 'DOCENTE' correctamente");
+                } else {
+                    JOptionPane.showMessageDialog(null, "Error al registrar el usuario");
+                }
             }
         } catch (SQLException e) {
-            System.err.println("Error al ejecutar la consulta: " + e.getMessage());
-        } finally {
-            try {
-                conexion.close();
-            } catch (SQLException e) {
-                System.err.println("Error al cerrar la conexión: " + e.getMessage());
+            System.err.println("Error al guardar usuario: " + e.getMessage());
+        }
+    }
+
+    private boolean usuarioExiste(String user, Connection conexion) throws SQLException {
+        try (PreparedStatement pstmt = conexion.prepareStatement(SELECT_EXISTE_USUARIO)) {
+            pstmt.setString(1, user.trim());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
             }
         }
-    } else {
-        JOptionPane.showMessageDialog(null, "Error al establecer la conexión");
+    }
+
+    public boolean validarContrasenia(String password) {
+        return password.length() >= 8
+                && password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?].*");
+    }
+
+    private static String valueFromEnv(String key, String defaultValue) {
+        String value = System.getenv(key);
+        return value == null || value.isBlank() ? defaultValue : value;
     }
 }
-
-// ayuda a ver si el usuario existe
-private boolean usuarioExiste(String user, Connection conexion) {
-    String sql = "SELECT 1 FROM usuarios WHERE ingresoUsuario = ?";
-    try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
-        pstmt.setString(1, user);
-        ResultSet rs = pstmt.executeQuery();
-        return rs.next(); // 
-    } catch (SQLException e) {
-        System.err.println("Error al ejecutar la consulta: " + e.getMessage());
-        return false; //en caso de error 
-    }
-}
-
-// valida contraseña
-public boolean validarContrasenia(String password) {
-    // caracteres 8 y simbolo
-    return password.length() >= 8 && password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?].*");
-}
-
-
-
-
-
-}
-

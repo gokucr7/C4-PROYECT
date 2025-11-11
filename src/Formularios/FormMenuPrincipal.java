@@ -25,6 +25,8 @@ public class FormMenuPrincipal extends javax.swing.JFrame {
         jButtonIngresar = new javax.swing.JButton();
         jButtonMostrar = new javax.swing.JButton();
         jButtonEstadistica = new javax.swing.JButton();
+        jButtonProgramas = new javax.swing.JButton();
+        jButtonRoles = new javax.swing.JButton();
         jButtonSalir = new javax.swing.JButton();
         jLabelNombrep = new javax.swing.JLabel();
         jLabelIcono = new javax.swing.JLabel();
@@ -80,6 +82,28 @@ public class FormMenuPrincipal extends javax.swing.JFrame {
             }
         });
         getContentPane().add(jButtonEstadistica, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 270, 130, 30));
+
+        jButtonProgramas.setBackground(new java.awt.Color(0, 0, 0));
+        jButtonProgramas.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jButtonProgramas.setForeground(new java.awt.Color(255, 255, 255));
+        jButtonProgramas.setText("PROGRAMAS");
+        jButtonProgramas.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonProgramasActionPerformed(evt);
+            }
+        });
+        getContentPane().add(jButtonProgramas, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 310, 130, 30));
+
+        jButtonRoles.setBackground(new java.awt.Color(0, 0, 0));
+        jButtonRoles.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jButtonRoles.setForeground(new java.awt.Color(255, 255, 255));
+        jButtonRoles.setText("ROLES");
+        jButtonRoles.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonRolesActionPerformed(evt);
+            }
+        });
+        getContentPane().add(jButtonRoles, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 350, 130, 30));
 
         jButtonSalir.setBackground(new java.awt.Color(0, 0, 0));
         jButtonSalir.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -147,6 +171,14 @@ public class FormMenuPrincipal extends javax.swing.JFrame {
         this.dispose(); // Cierra el formulario actual
     }//GEN-LAST:event_jButtonCerrarActionPerformed
 
+    private void jButtonProgramasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonProgramasActionPerformed
+        new FormPrograma().setVisible(true);
+    }//GEN-LAST:event_jButtonProgramasActionPerformed
+
+    private void jButtonRolesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonRolesActionPerformed
+        new FormRol().setVisible(true);
+    }//GEN-LAST:event_jButtonRolesActionPerformed
+
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
@@ -162,6 +194,8 @@ public class FormMenuPrincipal extends javax.swing.JFrame {
     private javax.swing.JButton jButtonEstadistica;
     private javax.swing.JButton jButtonIngresar;
     public static javax.swing.JButton jButtonMostrar;
+    private javax.swing.JButton jButtonProgramas;
+    private javax.swing.JButton jButtonRoles;
     private javax.swing.JButton jButtonSalir;
     private javax.swing.JLabel jLabelFondo;
     private javax.swing.JLabel jLabelIcono;

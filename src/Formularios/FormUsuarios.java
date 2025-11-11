@@ -3,10 +3,15 @@ package Formularios;
 
 import Clases.CLogin;
 import Clases.CUsuarios;
+import Clases.CatalogoRefresher;
 import javax.swing.JOptionPane;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 
 public class FormUsuarios extends javax.swing.JFrame {
+
+    private final Runnable catalogoListener = this::recargarRoles;
 
  
     public FormUsuarios() {
@@ -14,11 +19,24 @@ public class FormUsuarios extends javax.swing.JFrame {
         txtId.setEnabled(false);
         this.setLocationRelativeTo(null);
         CUsuarios objetoUsuarios = new CUsuarios();
+        objetoUsuarios.cargarRoles(cboTipoDeUsuario);
         objetoUsuarios.MostrarUsuarios(tbTotalUsuarios);
-        
+        lblUltimoAccesoValor.setText("-");
+
+        CatalogoRefresher.registrar(catalogoListener);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                CatalogoRefresher.remover(catalogoListener);
+            }
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                CatalogoRefresher.remover(catalogoListener);
+            }
+        });
     }
 
-    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -38,6 +56,10 @@ public class FormUsuarios extends javax.swing.JFrame {
         cboTipoDeUsuario = new javax.swing.JComboBox<>();
         jLabel2 = new javax.swing.JLabel();
         jButtonInicio = new javax.swing.JButton();
+        chkActivo = new javax.swing.JCheckBox();
+        btnToggleActivo = new javax.swing.JButton();
+        lblUltimoAcceso = new javax.swing.JLabel();
+        lblUltimoAccesoValor = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         tbTotalUsuarios = new javax.swing.JTable();
@@ -108,7 +130,7 @@ public class FormUsuarios extends javax.swing.JFrame {
             }
         });
 
-        cboTipoDeUsuario.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ADMIN", "DOCENTE", "ESTUDIANTE" }));
+        cboTipoDeUsuario.setModel(new javax.swing.DefaultComboBoxModel<>());
         cboTipoDeUsuario.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cboTipoDeUsuarioActionPerformed(evt);
@@ -129,30 +151,59 @@ public class FormUsuarios extends javax.swing.JFrame {
             }
         });
 
+        chkActivo.setFont(new java.awt.Font("Lucida Sans", 1, 14)); // NOI18N
+        chkActivo.setForeground(new java.awt.Color(255, 255, 255));
+        chkActivo.setText("Activo");
+        chkActivo.setOpaque(false);
+        chkActivo.setSelected(true);
+
+        btnToggleActivo.setBackground(new java.awt.Color(81, 84, 255));
+        btnToggleActivo.setFont(new java.awt.Font("Lucida Sans", 1, 14)); // NOI18N
+        btnToggleActivo.setForeground(new java.awt.Color(255, 255, 255));
+        btnToggleActivo.setText("Cambiar estado");
+        btnToggleActivo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnToggleActivoActionPerformed(evt);
+            }
+        });
+
+        lblUltimoAcceso.setFont(new java.awt.Font("Lucida Sans", 1, 14)); // NOI18N
+        lblUltimoAcceso.setForeground(new java.awt.Color(255, 255, 255));
+        lblUltimoAcceso.setText("Último acceso:");
+
+        lblUltimoAccesoValor.setFont(new java.awt.Font("Lucida Sans", 0, 14)); // NOI18N
+        lblUltimoAccesoValor.setForeground(new java.awt.Color(255, 255, 255));
+        lblUltimoAccesoValor.setText("-");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btnModificar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnGuardar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnModificar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnEliminar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnGuardar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
+                        .addComponent(chkActivo)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnToggleActivo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(paramid)
                             .addComponent(paramNombres)
                             .addComponent(paramApellidos)
-                            .addComponent(paramid)
-                            .addComponent(jButtonInicio)
-                            .addComponent(jLabel2))
+                            .addComponent(jLabel2)
+                            .addComponent(lblUltimoAcceso)
+                            .addComponent(jButtonInicio))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtId, javax.swing.GroupLayout.DEFAULT_SIZE, 154, Short.MAX_VALUE)
+                            .addComponent(txtId)
                             .addComponent(txtUsuarios)
                             .addComponent(txtContrasena)
-                            .addComponent(cboTipoDeUsuario, 0, 154, Short.MAX_VALUE))
-                        .addGap(10, 10, 10)))
+                            .addComponent(cboTipoDeUsuario, 0, 154, Short.MAX_VALUE)
+                            .addComponent(lblUltimoAccesoValor, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -174,13 +225,21 @@ public class FormUsuarios extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
                     .addComponent(cboTipoDeUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(48, 48, 48)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(chkActivo)
+                    .addComponent(btnToggleActivo))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblUltimoAcceso)
+                    .addComponent(lblUltimoAccesoValor))
+                .addGap(30, 30, 30)
                 .addComponent(btnGuardar)
                 .addGap(18, 18, 18)
                 .addComponent(btnModificar)
                 .addGap(18, 18, 18)
                 .addComponent(btnEliminar)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 104, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 60, Short.MAX_VALUE)
                 .addComponent(jButtonInicio, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -258,11 +317,13 @@ public class FormUsuarios extends javax.swing.JFrame {
        objetoUsuario.InsertarUsuarios(txtUsuarios, txtContrasena, cboTipoDeUsuario);
        objetoUsuario.MostrarUsuarios(tbTotalUsuarios);
        txtContrasena.setText("");
+       chkActivo.setSelected(true);
+       lblUltimoAccesoValor.setText("-");
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnModificarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnModificarActionPerformed
        CUsuarios objetoUsuario = new CUsuarios ();
-       objetoUsuario.ModificarUsuarios(txtId, txtUsuarios, txtContrasena, cboTipoDeUsuario);
+       objetoUsuario.ModificarUsuarios(txtId, txtUsuarios, txtContrasena, cboTipoDeUsuario, chkActivo);
        objetoUsuario.MostrarUsuarios(tbTotalUsuarios);
        txtContrasena.setText("");
     }//GEN-LAST:event_btnModificarActionPerformed
@@ -270,7 +331,7 @@ public class FormUsuarios extends javax.swing.JFrame {
     private void tbTotalUsuariosMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tbTotalUsuariosMouseClicked
         
        CUsuarios objetoUsuario = new CUsuarios ();
-       objetoUsuario.SeleccionarUsuario(tbTotalUsuarios, txtId, txtUsuarios, txtContrasena, cboTipoDeUsuario);
+       objetoUsuario.SeleccionarUsuario(tbTotalUsuarios, txtId, txtUsuarios, txtContrasena, cboTipoDeUsuario, chkActivo, lblUltimoAccesoValor);
     }//GEN-LAST:event_tbTotalUsuariosMouseClicked
 
     private void cboTipoDeUsuarioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboTipoDeUsuarioActionPerformed
@@ -298,12 +359,33 @@ public class FormUsuarios extends javax.swing.JFrame {
         txtUsuarios.setText("");
         txtContrasena.setText("");
         cboTipoDeUsuario.setSelectedIndex(0);
+        chkActivo.setSelected(true);
+        lblUltimoAccesoValor.setText("-");
 
         // Actualiza la tabla de usuarios
         objetoUsuario.MostrarUsuarios(tbTotalUsuarios);
         }
         }
     }//GEN-LAST:event_btnEliminarActionPerformed
+
+    private void btnToggleActivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnToggleActivoActionPerformed
+        if (txtId.getText().isBlank()) {
+            JOptionPane.showMessageDialog(this, "Selecciona un usuario para cambiar su estado");
+            return;
+        }
+        boolean nuevoEstado = !chkActivo.isSelected();
+        CUsuarios dao = new CUsuarios();
+        dao.actualizarEstado(txtId, nuevoEstado);
+        chkActivo.setSelected(nuevoEstado);
+        dao.MostrarUsuarios(tbTotalUsuarios);
+        for (int i = 0; i < tbTotalUsuarios.getRowCount(); i++) {
+            if (tbTotalUsuarios.getValueAt(i, 0).toString().equals(txtId.getText())) {
+                tbTotalUsuarios.setRowSelectionInterval(i, i);
+                dao.SeleccionarUsuario(tbTotalUsuarios, txtId, txtUsuarios, txtContrasena, cboTipoDeUsuario, chkActivo, lblUltimoAccesoValor);
+                break;
+            }
+        }
+    }//GEN-LAST:event_btnToggleActivoActionPerformed
 
     private void txtIdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtIdActionPerformed
         
@@ -329,6 +411,27 @@ public class FormUsuarios extends javax.swing.JFrame {
     this.dispose();
     }//GEN-LAST:event_jButtonInicioActionPerformed
 
+    private void recargarRoles() {
+        String seleccionado = (String) cboTipoDeUsuario.getSelectedItem();
+        String codigoSeleccionado = null;
+        if (seleccionado != null && !seleccionado.isBlank()) {
+            int idx = seleccionado.indexOf('-');
+            codigoSeleccionado = idx >= 0 ? seleccionado.substring(0, idx).trim() : seleccionado.trim();
+        }
+
+        CUsuarios dao = new CUsuarios();
+        dao.cargarRoles(cboTipoDeUsuario);
+        if (codigoSeleccionado != null) {
+            for (int i = 0; i < cboTipoDeUsuario.getItemCount(); i++) {
+                String item = cboTipoDeUsuario.getItemAt(i);
+                if (item != null && item.startsWith(codigoSeleccionado)) {
+                    cboTipoDeUsuario.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+    }
+
     public static void main(String args[]) {
         
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -342,6 +445,8 @@ public class FormUsuarios extends javax.swing.JFrame {
     private javax.swing.JButton btnEliminar;
     private javax.swing.JButton btnGuardar;
     private javax.swing.JButton btnModificar;
+    private javax.swing.JButton btnToggleActivo;
+    private javax.swing.JCheckBox chkActivo;
     private javax.swing.JComboBox<String> cboTipoDeUsuario;
     private javax.swing.JButton jButtonInicio;
     private javax.swing.JLabel jLabel2;
@@ -350,6 +455,8 @@ public class FormUsuarios extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
+    private javax.swing.JLabel lblUltimoAcceso;
+    private javax.swing.JLabel lblUltimoAccesoValor;
     private javax.swing.JLabel paramApellidos;
     private javax.swing.JLabel paramNombres;
     private javax.swing.JLabel paramid;
