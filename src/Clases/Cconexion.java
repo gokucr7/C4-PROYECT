@@ -11,7 +11,7 @@ import javax.swing.JOptionPane;
 public class Cconexion {
 
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/login";
-    private static final String DEFAULT_USER = "root";
+    private static final String DEFAULT_USER = "angel1204";
     private static final String DEFAULT_PASSWORD = "1234";
 
     private static final String URL = valueFromEnv("DB_URL", DEFAULT_URL);
