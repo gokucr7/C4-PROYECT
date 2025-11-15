@@ -657,12 +657,15 @@ public class FormAlumno extends javax.swing.JFrame {
         DecimalFormatSymbols simbolosColombia = new DecimalFormatSymbols(PDF_LOCALE);
         DecimalFormat formatoPromedio = new DecimalFormat("#,##0.0#", simbolosColombia);
 
-        lineas.add("Informe de estudiantes registrados");
-        lineas.add(String.format(PDF_LOCALE, "Total de estudiantes listados: %d.", tbTotalAlumnos.getRowCount()));
-        lineas.add("");
+        String[] encabezados = {"ID", "Nombres", "Apellidos", "Promedio", "Carrera"};
+        List<String[]> filasTabla = new ArrayList<>();
+        int[] anchosColumnas = new int[encabezados.length];
+        for (int i = 0; i < encabezados.length; i++) {
+            anchosColumnas[i] = encabezados[i].length();
+        }
 
         for (int f = 0; f < tbTotalAlumnos.getRowCount(); f++) {
-            String codigo = obtenerTextoCelda(f, 0);
+            String codigo = sanearTextoParaPdf(obtenerTextoCelda(f, 0));
             String nombres = sanearTextoParaPdf(obtenerTextoCelda(f, 1));
             String apellidos = sanearTextoParaPdf(obtenerTextoCelda(f, 2));
 
@@ -673,20 +676,29 @@ public class FormAlumno extends javax.swing.JFrame {
             String promedioTexto = formatoPromedio.format(promedioNumerico);
 
             String carrera = sanearTextoParaPdf(obtenerTextoCelda(f, 4));
-            String descripcion = String.format(
-                    PDF_LOCALE,
-                    "Estudiante %s %s (código %s) cursa %s y tiene un promedio acumulado de %s.",
-                    nombres,
-                    apellidos,
-                    codigo,
-                    carrera,
-                    promedioTexto
-            );
-            lineas.add(descripcion.trim());
+            String[] fila = {codigo, nombres, apellidos, promedioTexto, carrera};
+            filasTabla.add(fila);
+
+            for (int c = 0; c < fila.length; c++) {
+                anchosColumnas[c] = Math.max(anchosColumnas[c], fila[c] != null ? fila[c].length() : 0);
+            }
         }
 
+        lineas.add("Informe de estudiantes registrados");
+        lineas.add(String.format(PDF_LOCALE, "Total de estudiantes listados: %d.", tbTotalAlumnos.getRowCount()));
+        lineas.add("");
+
+        String separador = construirSeparadorTabla(anchosColumnas);
+        lineas.add(separador);
+        lineas.add(construirFilaTabla(encabezados, anchosColumnas));
+        lineas.add(separador);
+        for (String[] fila : filasTabla) {
+            lineas.add(construirFilaTabla(fila, anchosColumnas));
+        }
+        lineas.add(separador);
+
         StringBuilder contenidoTexto = new StringBuilder();
-        contenidoTexto.append("BT\n/F1 12 Tf\n72 750 Td\n");
+        contenidoTexto.append("BT\n/F1 10 Tf\n72 750 Td\n");
         for (String linea : lineas) {
             contenidoTexto.append('(')
                     .append(escapePdfText(sanearTextoParaPdf(linea)))
@@ -751,6 +763,42 @@ public class FormAlumno extends javax.swing.JFrame {
             return "";
         }
         return texto.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)");
+    }
+
+    private String construirFilaTabla(String[] valores, int[] anchos) {
+        StringBuilder fila = new StringBuilder();
+        fila.append('|');
+        for (int i = 0; i < valores.length; i++) {
+            fila.append(' ')
+                    .append(ajustarValorTabla(valores[i], anchos[i]))
+                    .append(' ')
+                    .append('|');
+        }
+        return fila.toString();
+    }
+
+    private String construirSeparadorTabla(int[] anchos) {
+        StringBuilder separador = new StringBuilder();
+        separador.append('+');
+        for (int ancho : anchos) {
+            for (int i = 0; i < ancho + 2; i++) {
+                separador.append('-');
+            }
+            separador.append('+');
+        }
+        return separador.toString();
+    }
+
+    private String ajustarValorTabla(String valor, int ancho) {
+        String texto = valor == null ? "" : valor;
+        if (texto.length() >= ancho) {
+            return texto;
+        }
+        StringBuilder ajustado = new StringBuilder(texto);
+        while (ajustado.length() < ancho) {
+            ajustado.append(' ');
+        }
+        return ajustado.toString();
     }
 
     private String sanearTextoParaPdf(String texto) {
