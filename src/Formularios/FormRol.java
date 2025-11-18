@@ -85,7 +85,9 @@ public class FormRol extends JFrame {
                 JOptionPane.showMessageDialog(this, "Selecciona un rol de la tabla");
                 return;
             }
-            int resp = JOptionPane.showConfirmDialog(this, "¿Deseas eliminar el rol seleccionado?", "Confirmación", JOptionPane.YES_NO_OPTION);
+            Object[] opciones = {"Sí", "No"};
+            int resp = JOptionPane.showOptionDialog(this, "¿Deseas eliminar el rol seleccionado?", "Confirmación",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]);
             if (resp == JOptionPane.YES_OPTION) {
                 dao.eliminarRol(txtId);
                 cargarTabla();
