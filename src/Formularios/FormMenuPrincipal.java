@@ -149,20 +149,20 @@ public class FormMenuPrincipal extends javax.swing.JFrame {
     private void jButtonEstadisticaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonEstadisticaActionPerformed
         FormEstadistica a = new FormEstadistica();
         a.setVisible(true);
-        this.setVisible(false);
+        this.dispose();
     }//GEN-LAST:event_jButtonEstadisticaActionPerformed
 
     private void jButtonMostrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonMostrarActionPerformed
         FormUsuarios a = new FormUsuarios();
         a.setVisible(true);
-        this.setVisible(false);
-        
+        this.dispose();
+
     }//GEN-LAST:event_jButtonMostrarActionPerformed
 
     private void jButtonIngresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonIngresarActionPerformed
         FormAlumno a = new FormAlumno();
         a.setVisible(true);
-        this.setVisible(false);
+        this.dispose();
     }//GEN-LAST:event_jButtonIngresarActionPerformed
 
     private void jButtonCerrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCerrarActionPerformed
@@ -173,10 +173,12 @@ public class FormMenuPrincipal extends javax.swing.JFrame {
 
     private void jButtonProgramasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonProgramasActionPerformed
         new FormPrograma().setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jButtonProgramasActionPerformed
 
     private void jButtonRolesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonRolesActionPerformed
         new FormRol().setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jButtonRolesActionPerformed
 
     public static void main(String args[]) {
