@@ -79,12 +79,17 @@ public class CUsuarios {
     }
 
     public void InsertarUsuarios(JTextField paramUsuarios, JTextField paramContrasena, JComboBox<String> paramTipoDeUsuario) {
-        setUsuario(paramUsuarios.getText());
+        setUsuario(paramUsuarios.getText().trim());
         setContrasena(paramContrasena.getText());
         setTipoDeUsuario(obtenerCodigoRol(paramTipoDeUsuario.getSelectedItem()));
 
         if (getUsuario().isBlank() || getContrasena().isBlank()) {
             JOptionPane.showMessageDialog(null, "El usuario y la contraseña son obligatorios");
+            return;
+        }
+
+        if (getContrasena().length() < 8) {
+            JOptionPane.showMessageDialog(null, "La contraseña debe tener al menos 8 caracteres");
             return;
         }
 
@@ -175,12 +180,21 @@ public class CUsuarios {
     public void ModificarUsuarios(JTextField paramCodigo, JTextField paramUsuarios, JTextField paramContrasena,
             JComboBox<String> paramTipoDeUsuario, JCheckBox chkActivo) {
         setCodigo(Integer.parseInt(paramCodigo.getText()));
-        setUsuario(paramUsuarios.getText());
+        setUsuario(paramUsuarios.getText().trim());
         setContrasena(paramContrasena.getText());
         setTipoDeUsuario(obtenerCodigoRol(paramTipoDeUsuario.getSelectedItem()));
         setActivo(chkActivo.isSelected());
 
+        if (getUsuario().isBlank()) {
+            JOptionPane.showMessageDialog(null, "El usuario es obligatorio");
+            return;
+        }
+
         boolean actualizarContrasena = getContrasena() != null && !getContrasena().isBlank();
+        if (actualizarContrasena && getContrasena().length() < 8) {
+            JOptionPane.showMessageDialog(null, "La contraseña debe tener al menos 8 caracteres");
+            return;
+        }
         String consulta;
         if (actualizarContrasena) {
             consulta = "UPDATE usuarios SET ingresoUsuario = ?, ingresoContrasenia = ?, tipo_de_usuario = ?, activo = ? WHERE id = ?";

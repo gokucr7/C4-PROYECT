@@ -21,7 +21,7 @@ public class CLogin {
 
     private static String TipoUsuarioAdentro;
 
-    public String validaUsuario(JTextField usuario, JPasswordField contrasenia) {
+    public String validaUsuario(FormLogin loginFrame, JTextField usuario, JPasswordField contrasenia) {
         String username = usuario.getText();
         if (username == null || username.isBlank()) {
             JOptionPane.showMessageDialog(null, "Ingrese el usuario");
@@ -60,7 +60,7 @@ public class CLogin {
 
                     TipoUsuarioAdentro = roleCode;
                     registrarUltimoAcceso(conn, username.trim());
-                    abrirMenuPorRol(roleCode);
+                    abrirMenuPorRol(roleCode, loginFrame);
                 }
             }
         } catch (HeadlessException | SQLException e) {
@@ -108,17 +108,19 @@ public class CLogin {
         return false;
     }
 
-    private void abrirMenuPorRol(String tipoUsuario) {
+    private void abrirMenuPorRol(String tipoUsuario, FormLogin loginFrame) {
         switch (tipoUsuario) {
             case "ADMIN" -> {
-                FormLogin form = new FormLogin();
-                form.dispose();
+                if (loginFrame != null) {
+                    loginFrame.dispose();
+                }
                 FormMenuPrincipal objetoMenu = new FormMenuPrincipal();
                 objetoMenu.setVisible(true);
             }
             case "DOCENTE" -> {
-                FormLogin form = new FormLogin();
-                form.dispose();
+                if (loginFrame != null) {
+                    loginFrame.dispose();
+                }
                 FormMenuPrincipal2 objetoMenu2 = new FormMenuPrincipal2();
                 objetoMenu2.setVisible(true);
             }

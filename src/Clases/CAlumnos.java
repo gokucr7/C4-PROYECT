@@ -94,6 +94,11 @@ public class CAlumnos {
             return;
         }
 
+        if (getPromedio() < 0.0 || getPromedio() > 5.0) {
+            JOptionPane.showMessageDialog(null, "El promedio debe estar entre 0.00 y 5.00");
+            return;
+        }
+
         ejecutarActualizacion(INSERT_ALUMNO,
                 ps -> {
                     ps.setString(1, getNombreALumnos());
@@ -216,6 +221,16 @@ public class CAlumnos {
         setApellidosAlumnos(paramApellidos.getText().trim());
         setPromedio(((Number) paramPromedio.getValue()).doubleValue());
         setCarrera(extraerCodigoPrograma(paramCarrera.getSelectedItem()));
+
+        if (getNombreALumnos().isEmpty() || getApellidosAlumnos().isEmpty() || getCarrera().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Completa todos los campos obligatorios");
+            return;
+        }
+
+        if (getPromedio() < 0.0 || getPromedio() > 5.0) {
+            JOptionPane.showMessageDialog(null, "El promedio debe estar entre 0.00 y 5.00");
+            return;
+        }
 
         ejecutarActualizacion(UPDATE_ALUMNO,
                 ps -> {

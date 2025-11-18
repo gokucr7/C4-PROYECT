@@ -133,6 +133,78 @@ LOCK TABLES `usuarios` WRITE;
 INSERT INTO `usuarios` VALUES (1,'admin','$2y$10$E9nPo.Eys2SbkDXOiv1sEuLT4Va2eG5n0UZANUeAFX3K8t1Bz88.i','ADMIN',1,'2025-10-29 13:49:32','2025-10-23 11:15:48','2025-10-29 13:49:32'),(2,'matematicasseptimosemestre','$2y$10$V.zxPP46wb4LPaRyZKb56u9YUUfwDjKVXv.gRIlj934010X2D8XO6','DOCENTE',1,NULL,'2025-10-29 12:11:31','2025-10-29 12:11:31');
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Triggers para normalizar y validar datos
+--
+
+DROP TRIGGER IF EXISTS `bi_alumnos_normalizar`;
+DELIMITER $$
+CREATE TRIGGER `bi_alumnos_normalizar`
+BEFORE INSERT ON `alumnos`
+FOR EACH ROW
+BEGIN
+    SET NEW.nombres   = TRIM(NEW.nombres);
+    SET NEW.apellidos = TRIM(NEW.apellidos);
+    SET NEW.carrera   = TRIM(NEW.carrera);
+
+    IF NEW.promedio < 0.00 OR NEW.promedio > 5.00 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El promedio debe estar entre 0.00 y 5.00';
+    END IF;
+END$$
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `bu_alumnos_normalizar`;
+DELIMITER $$
+CREATE TRIGGER `bu_alumnos_normalizar`
+BEFORE UPDATE ON `alumnos`
+FOR EACH ROW
+BEGIN
+    SET NEW.nombres   = TRIM(NEW.nombres);
+    SET NEW.apellidos = TRIM(NEW.apellidos);
+    SET NEW.carrera   = TRIM(NEW.carrera);
+
+    IF NEW.promedio < 0.00 OR NEW.promedio > 5.00 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El promedio debe estar entre 0.00 y 5.00';
+    END IF;
+END$$
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `bi_usuarios_validar`;
+DELIMITER $$
+CREATE TRIGGER `bi_usuarios_validar`
+BEFORE INSERT ON `usuarios`
+FOR EACH ROW
+BEGIN
+    SET NEW.ingresoUsuario = TRIM(NEW.ingresoUsuario);
+
+    IF NEW.ingresoUsuario = '' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El nombre de usuario no puede estar vacío.';
+    END IF;
+
+    IF CHAR_LENGTH(NEW.ingresoContrasenia) < 8 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La contraseña debe tener al menos 8 caracteres.';
+    END IF;
+END$$
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `bu_usuarios_validar`;
+DELIMITER $$
+CREATE TRIGGER `bu_usuarios_validar`
+BEFORE UPDATE ON `usuarios`
+FOR EACH ROW
+BEGIN
+    SET NEW.ingresoUsuario = TRIM(NEW.ingresoUsuario);
+
+    IF NEW.ingresoUsuario = '' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El nombre de usuario no puede estar vacío.';
+    END IF;
+
+    IF CHAR_LENGTH(NEW.ingresoContrasenia) < 8 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La contraseña debe tener al menos 8 caracteres.';
+    END IF;
+END$$
+DELIMITER ;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
