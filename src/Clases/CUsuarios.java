@@ -89,7 +89,7 @@ public class CUsuarios {
         }
 
         if (getContrasena().length() < 8) {
-            JOptionPane.showMessageDialog(null, "La contraseña debe tener al menos 8 caracteres");
+            JOptionPane.showMessageDialog(null, "La contraseña debe tener al menos 8 caracteres y contener un símbolo especial");
             return;
         }
 
@@ -192,7 +192,7 @@ public class CUsuarios {
 
         boolean actualizarContrasena = getContrasena() != null && !getContrasena().isBlank();
         if (actualizarContrasena && getContrasena().length() < 8) {
-            JOptionPane.showMessageDialog(null, "La contraseña debe tener al menos 8 caracteres");
+            JOptionPane.showMessageDialog(null, "La contraseña debe tener al menos 8 caracteres y contener un símbolo especial");
             return;
         }
         String consulta;

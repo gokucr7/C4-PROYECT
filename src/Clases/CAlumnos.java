@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComboBox;
@@ -86,7 +87,11 @@ public class CAlumnos {
             JSpinner paramPromedio, JComboBox<String> paramCarrera) {
         setNombreALumnos(paramNombres.getText().trim());
         setApellidosAlumnos(paramApellidos.getText().trim());
-        setPromedio(((Number) paramPromedio.getValue()).doubleValue());
+        Double promedioIngresado = obtenerPromedio(paramPromedio);
+        if (promedioIngresado == null) {
+            return;
+        }
+        setPromedio(promedioIngresado);
         setCarrera(extraerCodigoPrograma(paramCarrera.getSelectedItem()));
 
         if (getNombreALumnos().isEmpty() || getApellidosAlumnos().isEmpty() || getCarrera().isEmpty()) {
@@ -219,7 +224,11 @@ public class CAlumnos {
         setCodigo(Integer.parseInt(paramCodigo.getText()));
         setNombreALumnos(paramNombres.getText().trim());
         setApellidosAlumnos(paramApellidos.getText().trim());
-        setPromedio(((Number) paramPromedio.getValue()).doubleValue());
+        Double promedioIngresado = obtenerPromedio(paramPromedio);
+        if (promedioIngresado == null) {
+            return;
+        }
+        setPromedio(promedioIngresado);
         setCarrera(extraerCodigoPrograma(paramCarrera.getSelectedItem()));
 
         if (getNombreALumnos().isEmpty() || getApellidosAlumnos().isEmpty() || getCarrera().isEmpty()) {
@@ -291,6 +300,21 @@ public class CAlumnos {
                 combo.setSelectedIndex(i);
                 return;
             }
+        }
+    }
+
+    private Double obtenerPromedio(JSpinner spinner) {
+        try {
+            spinner.commitEdit();
+            double promedioValor = ((Number) spinner.getValue()).doubleValue();
+            if (promedioValor < 0.0 || promedioValor > 5.0) {
+                JOptionPane.showMessageDialog(null, "El promedio debe estar entre 0.00 y 5.00");
+                return null;
+            }
+            return promedioValor;
+        } catch (ParseException | IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "El promedio debe estar entre 0.00 y 5.00");
+            return null;
         }
     }
 

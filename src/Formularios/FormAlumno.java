@@ -356,7 +356,9 @@ public class FormAlumno extends javax.swing.JFrame {
         if (idAlumnoAEliminar.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Por favor, selecciona un alumno de la tabla para eliminar.");
         } else {
-        int confirmacion = JOptionPane.showConfirmDialog(null, "¿Estás seguro de que deseas eliminar a este alumno?", "Confirmación de Eliminación", JOptionPane.YES_NO_OPTION);
+        Object[] opciones = {"Sí", "No"};
+        int confirmacion = JOptionPane.showOptionDialog(null, "¿Estás seguro de que deseas eliminar a este alumno?", "Confirmación de Eliminación",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
 
