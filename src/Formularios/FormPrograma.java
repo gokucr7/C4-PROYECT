@@ -85,7 +85,9 @@ public class FormPrograma extends JFrame {
                 JOptionPane.showMessageDialog(this, "Selecciona un programa de la tabla");
                 return;
             }
-            int resp = JOptionPane.showConfirmDialog(this, "¿Deseas eliminar el programa seleccionado?", "Confirmación", JOptionPane.YES_NO_OPTION);
+            Object[] opciones = {"Sí", "No"};
+            int resp = JOptionPane.showOptionDialog(this, "¿Deseas eliminar el programa seleccionado?", "Confirmación",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]);
             if (resp == JOptionPane.YES_OPTION) {
                 dao.eliminarPrograma(txtId);
                 cargarTabla();
